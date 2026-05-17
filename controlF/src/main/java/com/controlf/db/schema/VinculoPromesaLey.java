@@ -8,7 +8,8 @@ public class VinculoPromesaLey {
     private ImpactoEsperado impactoEsperado;
 
     /* 
-    
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
 
     public ImpactoEsperado getImpactoEsperado() { return impactoEsperado; }
     public void setImpactoEsperado(ImpactoEsperado impactoEsperado) { this.impactoEsperado = impactoEsperado; }

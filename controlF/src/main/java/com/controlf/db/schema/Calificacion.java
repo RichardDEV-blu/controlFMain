@@ -9,7 +9,8 @@ public class Calificacion {
     private LocalDateTime fecha;
 
     /* 
-   
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
 
     public Integer getPuntaje() { return puntaje; }
     public void setPuntaje(Integer puntaje) { this.puntaje = puntaje; }
