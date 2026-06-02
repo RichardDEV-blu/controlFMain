@@ -1,0 +1,25 @@
+{
+  "id": "nav-sidebar-001",
+  "secciones": [
+    {
+      "nombre": "Dashboard",
+      "icono": "dashboard_icon",
+      "estaActivo": false
+    },
+    {
+      "nombre": "Políticos",
+      "icono": "people_icon",
+      "estaActivo": false
+    },
+    {
+      "nombre": "Leyes",
+      "icono": "file_document_icon",
+      "estaActivo": true
+    },
+    {
+      "nombre": "Admin",
+      "icono": "settings_sliders_icon",
+      "estaActivo": false
+    }
+  ]
+}

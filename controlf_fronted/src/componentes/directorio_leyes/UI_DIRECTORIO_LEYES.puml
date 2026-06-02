@@ -1,0 +1,26 @@
+@startsalt
+{+
+    {* <b>Plataforma de Auditoría Ciudadana</b> | [Dashboard] | [Políticos] | [<b>Leyes</b>] | [Admin] }
+    --
+    {/ <b>Directorio de Leyes y Propuestas</b> }
+    --
+    {
+        { <b>Buscar Ley:</b> | ( ) [ Ingrese palabra clave o número de ley... ] | [ Buscar ] }
+        { [^Categoría (Salud, Ambiente...)^] | [^Estado (Aprobada, Debate...)^] | [^Año Legislativo^] }
+    }
+    --
+    {#
+        <b>Código</b> | <b>Título de la Ley</b> | <b>Categoría</b> | <b>Estado</b> | <b>Acción</b>
+        LEY-2024-001 | Reforma al Código de Salud | Salud | [ APROBADA ] | [ Ver Expediente ]
+        LEY-2024-002 | Ley de Protección de Datos | Tecnología | [ EN DEBATE ] | [ Ver Expediente ]
+        LEY-2024-003 | Incentivos a Energía Solar | Energía | [ APROBADA ] | [ Ver Expediente ]
+        LEY-2024-004 | Seguridad en Fronteras | Seguridad | [ EN DEBATE ] | [ Ver Expediente ]
+        LEY-2024-005 | Protección de Ecosistemas | Ambiente | [ APROBADA ] | [ Ver Expediente ]
+        LEY-2024-006 | Ley de Educación Superior | Educación | [ VETADA ] | [ Ver Expediente ]
+    }
+    --
+    {
+        [ << Anterior ] | Pagina 1 de 8 | [ Siguiente >> ]
+    }
+}
+@endsalt

@@ -1,0 +1,30 @@
+[
+  {
+    "id": "nav-001",
+    "label": "Dashboard",
+    "icono": "dashboard",
+    "estaActivo": true,
+    "ruta": "/dashboard"
+  },
+  {
+    "id": "nav-002",
+    "label": "Políticos",
+    "icono": "politicos",
+    "estaActivo": false,
+    "ruta": "/politicos"
+  },
+  {
+    "id": "nav-003",
+    "label": "Leyes",
+    "icono": "leyes",
+    "estaActivo": false,
+    "ruta": "/leyes"
+  },
+  {
+    "id": "nav-004",
+    "label": "Admin",
+    "icono": "admin",
+    "estaActivo": false,
+    "ruta": "/admin"
+  }
+]

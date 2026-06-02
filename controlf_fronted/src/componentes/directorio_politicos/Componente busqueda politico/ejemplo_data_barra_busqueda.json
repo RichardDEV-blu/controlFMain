@@ -1,0 +1,25 @@
+{
+  "id": "barra-001",
+  "titulo": "Directorio de Políticos",
+  "subtitulo": "Monitoreo de coherencia y actividad legislativa",
+  "filtros": [
+    {
+      "id": "filtro-001",
+      "label": "Partido Político",
+      "valorSeleccionado": null
+    },
+    {
+      "id": "filtro-002",
+      "label": "Provincia / Región",
+      "valorSeleccionado": null
+    },
+    {
+      "id": "filtro-003",
+      "label": "Comisión",
+      "valorSeleccionado": null
+    }
+  ],
+  "textoBusqueda": "",
+  "placeholderBusqueda": "Buscar por nombre...",
+  "textoBotonExportar": "Exportar Reporte"
+}

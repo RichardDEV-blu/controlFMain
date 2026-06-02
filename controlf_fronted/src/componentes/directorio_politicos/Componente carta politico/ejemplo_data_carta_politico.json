@@ -1,0 +1,62 @@
+[
+  {
+    "id": "pol-001",
+    "nombre": "Juanito Perez",
+    "organizacion": "Mov. Transparencia",
+    "fotoUrl": "",
+    "estaActivo": true,
+    "estadoEtiqueta": "COHERENTE",
+    "porcentajeCoherencia": 85,
+    "cantidadProyectos": 24
+  },
+  {
+    "id": "pol-002",
+    "nombre": "Maria Garcia",
+    "organizacion": "Justicia Social",
+    "fotoUrl": "",
+    "estaActivo": true,
+    "estadoEtiqueta": "INCOHERENTE",
+    "porcentajeCoherencia": 42,
+    "cantidadProyectos": 12
+  },
+  {
+    "id": "pol-003",
+    "nombre": "Carlos Lopez",
+    "organizacion": "Progreso",
+    "fotoUrl": "",
+    "estaActivo": true,
+    "estadoEtiqueta": "COHERENTE",
+    "porcentajeCoherencia": 75,
+    "cantidadProyectos": 31
+  },
+  {
+    "id": "pol-004",
+    "nombre": "Elena Mora",
+    "organizacion": "Independiente",
+    "fotoUrl": "",
+    "estaActivo": true,
+    "estadoEtiqueta": "COHERENTE",
+    "porcentajeCoherencia": 92,
+    "cantidadProyectos": 45
+  },
+  {
+    "id": "pol-005",
+    "nombre": "Luis Torres",
+    "organizacion": "Fuerza Ciudadana",
+    "fotoUrl": "",
+    "estaActivo": false,
+    "estadoEtiqueta": "INCOHERENTE",
+    "porcentajeCoherencia": 15,
+    "cantidadProyectos": 8
+  },
+  {
+    "id": "pol-006",
+    "nombre": "Ana Martinez",
+    "organizacion": "Unión Nacional",
+    "fotoUrl": "",
+    "estaActivo": true,
+    "estadoEtiqueta": "ABSTENCIÓN ALTA",
+    "porcentajeCoherencia": 60,
+    "cantidadProyectos": 19
+  }
+]

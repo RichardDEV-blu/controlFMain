@@ -1,0 +1,13 @@
+{
+  "id": "resultado-votacion-001",
+  "titulo": "Resultado Votación",
+  "valorPrincipal": 95,
+  "unidadPrincipal": "Votos",
+  "votosFavor": 95,
+  "votosContra": 20,
+  "votosAbstencion": 10,
+  "escalaMinima": 0,
+  "escalaMedia": 50,
+  "escalaMaxima": 100,
+  "tieneMenuOpciones": true
+}

@@ -1,0 +1,10 @@
+{
+  "id": "expediente-legislativo-001",
+  "tipoExpediente": "EXPEDIENTE LEGISLATIVO",
+  "codigoExpediente": "LEY-2024-005",
+  "titulo": "Ley Orgánica para la Protección de Ecosistemas de Alta Montaña",
+  "estaAprobado": true,
+  "categoria": "Medio Ambiente",
+  "proponente": "Comisión de Biodiversidad",
+  "tieneMenuOpciones": false
+}

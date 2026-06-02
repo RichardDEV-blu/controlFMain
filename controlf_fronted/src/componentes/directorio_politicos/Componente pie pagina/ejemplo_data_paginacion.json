@@ -1,0 +1,7 @@
+{
+  "id": "paginacion-001",
+  "paginaActual": 1,
+  "totalPaginas": 12,
+  "hayAnterior": false,
+  "haySiguiente": true
+}

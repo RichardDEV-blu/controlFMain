@@ -1,0 +1,54 @@
+@startsalt
+{+
+    {* <b>Plataforma de Auditoría Ciudadana</b> | [Dashboard] | [Políticos] | [Leyes] | [Admin] }
+    --
+    {+
+        {/ <b>EXPEDIENTE LEGISLATIVO: LEY-2024-005</b> }
+        {
+            <b>TÍTULO:</b> | "Ley Orgánica para la Protección de Ecosistemas de Alta Montaña"
+            <b>ESTADO:</b> | [ APROBADA ]
+            <b>CATEGORÍA:</b> | Medio Ambiente
+            <b>PROPONENTE:</b> | Comisión de Biodiversidad
+        }
+    }
+    --
+    {^ <b>CONTENIDO DE LA LEY (RF-02)</b>
+        {
+            { <b>Resumen Ejecutivo:</b> | "Esta ley establece la prohibición absoluta de actividades extractivas en zonas por encima de los 3.500 msnm." }
+            --
+            { <b>Impacto Social:</b> | "Afecta a 12 provincias y garantiza el suministro de agua para 5 millones de personas." }
+        }
+    }
+    --
+    {^ <b>RESULTADO DE LA VOTACIÓN</b>
+        {
+            { <b>Votos Favorables:</b> | [#######...] 95 }
+            { <b>Votos en Contra:</b> | [##........] 20 }
+            { <b>Abstenciones:</b>    | [#.........] 10 }
+        }
+        --
+        [ Ver Lista Completa de Votantes por Bloque ]
+    }
+    --
+    {^ <b>AUDITORÍA DE COHERENCIA (Cruce de Datos)</b>
+        {#
+            <b>Político</b> | <b>Bloque</b> | <b>Voto</b> | <b>Análisis de Coherencia</b>
+            "Juanito Perez" | Transparencia | FAVOR | (V) Cumple su promesa ambiental
+            "Maria Garcia"  | Indep.      | CONTRA | (X) Incumple promesa de sostenibilidad
+        }
+    }
+    --
+    {^ <b>DEBATE CIUDADANO</b>
+        {
+            <b>Calificación General:</b> | (O) 4.2 / 5.0
+            [ Escribir mi opinión sobre esta ley ]
+        }
+        --
+        {#
+            <b>Usuario</b> | <b>Comentario</b> | <b>Fecha</b>
+            "EcoLover99" | "Es la ley más importante de la década." | 15/05/2026
+            "MinerosEc"  | "Afectará la inversión extranjera."     | 14/05/2026
+        }
+    }
+}
+@endsalt

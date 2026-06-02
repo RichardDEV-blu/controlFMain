@@ -1,0 +1,38 @@
+@startsalt
+{+
+    {* <b>Plataforma de Auditoría Ciudadana</b> | [Dashboard] | [Políticos] | [Leyes] | [<b>Admin</b>] | [ Cerrar Sesión ] }
+    --
+    {/ <b>Panel de Control y Administración</b> }
+    --
+    {
+        {^ "Gestión de Contenido"
+            [ Importar Leyes (API) ]
+            [ Cargar Votos (CSV/JSON) ]
+            [ Validar Nuevos Perfiles ]
+        } | {^ "Seguridad y Usuarios"
+            [ Gestionar Roles ]
+            [ Usuarios Reportados ]
+            [ Auditoría de Logs ]
+        }
+    }
+    --
+    {^ <b>MOTOR DE COHERENCIA TÉCNICA (RF-03 / RF-04)</b>
+        <i>Este módulo permite vincular promesas electorales con leyes reales.</i>
+        .
+        Seleccionar Político:  | ^Juanito Melcocha^
+        Seleccionar Promesa:   | ^Promesa: Reducción de Impuestos (2023)^
+        Vincular con Ley:      | ^Ley: Reforma Tributaria 2024^
+        Impacto Esperado:      | (X) POSITIVO (Si vota FAVOR es coherente) | ( ) NEGATIVO
+        .
+        [ [ Generar Vínculo de Coherencia ] ]
+    }
+    --
+    {^ <b>Mantenimiento del Sistema (RNF-02/05)</b>
+        Estado de la Base de Datos: | [ OK - Conectado ]
+        Último Respaldo:            | 15/05/2026 23:00
+        Carga del Servidor:         | [|||.......] 30%
+        --
+        [ Ejecutar Respaldo Manual ] | [ Limpiar Caché ]
+    }
+}
+@endsalt

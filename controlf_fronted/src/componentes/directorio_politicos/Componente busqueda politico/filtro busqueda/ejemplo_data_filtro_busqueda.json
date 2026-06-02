@@ -1,0 +1,17 @@
+[
+  {
+    "id": "filtro-001",
+    "label": "Partido Político",
+    "valorSeleccionado": null
+  },
+  {
+    "id": "filtro-002",
+    "label": "Provincia / Región",
+    "valorSeleccionado": null
+  },
+  {
+    "id": "filtro-003",
+    "label": "Comisión",
+    "valorSeleccionado": null
+  }
+]

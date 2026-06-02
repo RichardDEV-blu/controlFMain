@@ -1,0 +1,31 @@
+{
+  "id": "sidebar-colapsado-001",
+  "items": [
+    {
+      "id": "nav-001",
+      "icono": "dashboard",
+      "estaActivo": false,
+      "ruta": "/dashboard"
+    },
+    {
+      "id": "nav-002",
+      "icono": "politicos",
+      "estaActivo": true,
+      "ruta": "/politicos"
+    },
+    {
+      "id": "nav-003",
+      "icono": "leyes",
+      "estaActivo": false,
+      "ruta": "/leyes"
+    },
+    {
+      "id": "nav-004",
+      "icono": "auditoria",
+      "estaActivo": false,
+      "ruta": "/auditoria"
+    }
+  ],
+  "fotoUrlUsuario": "",
+  "textoAdmin": "ADMIN"
+}

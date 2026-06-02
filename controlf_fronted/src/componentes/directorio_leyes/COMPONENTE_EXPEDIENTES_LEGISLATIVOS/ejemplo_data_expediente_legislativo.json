@@ -1,0 +1,44 @@
+[
+  {
+    "id": "LEY-2024-001",
+    "tituloLey": "Reforma al Código de Salud",
+    "categoria": "Salud",
+    "estado": "APROBADA",
+    "accionUrl": "/ley/LEY-2024-001"
+  },
+  {
+    "id": "LEY-2024-002",
+    "tituloLey": "Ley de Protección de Datos",
+    "categoria": "Tecnología",
+    "estado": "EN DEBATE",
+    "accionUrl": "/ley/LEY-2024-002"
+  },
+  {
+    "id": "LEY-2024-003",
+    "tituloLey": "Incentivos a Energía Solar",
+    "categoria": "Energía",
+    "estado": "APROBADA",
+    "accionUrl": "/ley/LEY-2024-003"
+  },
+  {
+    "id": "LEY-2024-004",
+    "tituloLey": "Seguridad en Fronteras",
+    "categoria": "Seguridad",
+    "estado": "EN DEBATE",
+    "accionUrl": "/ley/LEY-2024-004"
+  },
+  {
+    "id": "LEY-2024-005",
+    "tituloLey": "Protección de Ecosistemas",
+    "categoria": "Ambiente",
+    "estado": "APROBADA",
+    "accionUrl": "/ley/LEY-2024-005"
+  },
+  {
+    "id": "LEY-2024-006",
+    "tituloLey": "Ley de Educación Superior",
+    "categoria": "Educación",
+    "estado": "VETADA",
+    "accionUrl": "/ley/LEY-2024-006"
+  }
+]

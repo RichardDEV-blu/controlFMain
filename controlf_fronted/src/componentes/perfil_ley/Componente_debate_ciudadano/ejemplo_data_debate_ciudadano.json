@@ -1,0 +1,24 @@
+{
+  "id": "debate-ciudadano-001",
+  "titulo": "Debate Ciudadano",
+  "puntuacionPromedio": 4.2,
+  "puntuacionMaxima": 5,
+  "comentarios": [
+    {
+      "id": "comentario-001",
+      "usuario": "EcoLover99",
+      "fecha": "15/05/2026",
+      "mensaje": "Es la ley más importante de la década.",
+      "avatarUrl": "avatar-ecoLover99.png"
+    },
+    {
+      "id": "comentario-002",
+      "usuario": "MinerosEc",
+      "fecha": "14/05/2026",
+      "mensaje": "Afectará la inversión extranjera.",
+      "avatarUrl": "avatar-minerosEc.png"
+    }
+  ],
+  "placeholderComentario": "Escribir mi opinión...",
+  "tieneBotonEnviar": true
+}

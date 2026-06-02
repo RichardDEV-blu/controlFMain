@@ -1,0 +1,60 @@
+@startsalt
+{+
+    {* <b>Plataforma de Auditoría Ciudadana</b> | [Dashboard] | [<b>Políticos</b>] | [Leyes] | [Admin] }
+    --
+    {/ <b>Directorio de Políticos</b> }
+    --
+    {
+        { <b>Filtrar por:</b> | ( ) [ Buscar por nombre... ] | [ Buscar ] }
+        { [^Partido Político^] | [^Provincia / Región^] | [^Comisión Legislativa^] }
+    }
+    --
+    {
+        {^ "Politico A"
+            [ ( Foto ) ]
+            <b>Juanito Perez</b>
+            Mov. Transparencia
+            Coherencia: 85%
+            [ Ver Perfil ]
+        } | {^ "Politico B"
+            [ ( Foto ) ]
+            <b>Maria Garcia</b>
+            Justicia Social
+            Coherencia: 42%
+            [ Ver Perfil ]
+        } | {^ "Politico C"
+            [ ( Foto ) ]
+            <b>Carlos Lopez</b>
+            Progreso
+            Coherencia: 75%
+            [ Ver Perfil ]
+        }
+    }
+    --
+    {
+        {^ "Politico D"
+            [ ( Foto ) ]
+            <b>Elena Mora</b>
+            Independiente
+            Coherencia: 92%
+            [ Ver Perfil ]
+        } | {^ "Politico E"
+            [ ( Foto ) ]
+            <b>Luis Torres</b>
+            Fuerza Ciudadana
+            Coherencia: 15%
+            [ Ver Perfil ]
+        } | {^ "Politico F"
+            [ ( Foto ) ]
+            <b>Ana Martinez</b>
+            Unión Nacional
+            Coherencia: 60%
+            [ Ver Perfil ]
+        }
+    }
+    --
+    {
+        [ << Anterior ] | Pagina 1 de 12 | [ Siguiente >> ]
+    }
+}
+@endsalt

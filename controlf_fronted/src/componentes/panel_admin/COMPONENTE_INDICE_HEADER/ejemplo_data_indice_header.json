@@ -1,0 +1,33 @@
+{
+  "id": "nav_sidebar_01",
+  "nombreApp": "PAC ADMIN",
+  "logoUrl": "assets/icons/shield-admin.svg",
+  "seccionActiva": "Admin",
+  "itemsMenu": [
+    {
+      "id": "menu_item_dashboard",
+      "etiqueta": "Dashboard",
+      "iconoUrl": "assets/icons/dashboard.svg",
+      "estaSeleccionado": false
+    },
+    {
+      "id": "menu_item_politicos",
+      "etiqueta": "Políticos",
+      "iconoUrl": "assets/icons/users.svg",
+      "estaSeleccionado": false
+    },
+    {
+      "id": "menu_item_leyes",
+      "etiqueta": "Leyes",
+      "iconoUrl": "assets/icons/gavel.svg",
+      "estaSeleccionado": false
+    },
+    {
+      "id": "menu_item_admin",
+      "etiqueta": "Admin",
+      "iconoUrl": "assets/icons/sliders.svg",
+      "estaSeleccionado": true
+    }
+  ],
+  "botonCerrarSesion": "Cerrar Sesión"
+}
