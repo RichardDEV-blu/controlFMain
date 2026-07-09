@@ -4,18 +4,24 @@ import com.controlf.db.repository.*;
 import com.controlf.db.schema.Calificacion;
 import com.controlf.db.schema.Comentario;
 import com.controlf.db.schema.Politico;
+import com.controlf.db.schema.Promesa;
 import com.controlf.db.schema.Usuario;
 import com.controlf.dto.ActualizarCampoPoliticoRequestDTO;
 import com.controlf.dto.CalificacionRequestDTO;
 import com.controlf.dto.CartaPoliticoDTO;
 import com.controlf.dto.ComentarioRequestDTO;
+import com.controlf.dto.PromesaDTO;
+import com.controlf.dto.PromesaRequestDTO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -32,6 +38,7 @@ public class PoliticoService {
     private final ComentarioRepository comentarioRepository;
     private final CalificacionRepository calificacionRepository;
     private final UsuarioRepository usuarioRepository;
+    private final PromesaRepository promesaRepository;
     private final ConfiguracionRepository configuracionRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -198,6 +205,46 @@ public class PoliticoService {
         calificacionRepository.save(cal);
         p.getCalificaciones().add(cal);
         politicoRepository.save(p);
+    }
+
+    @Transactional
+    public PromesaDTO crearPromesa(Integer politicoId, PromesaRequestDTO request) {
+        Politico politico = politicoRepository.findById(politicoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Político no encontrado"));
+
+        Promesa promesa = new Promesa();
+        promesa.setDescripcion(request.getDescripcion());
+        promesa.setCategoria(request.getCategoria());
+        promesa.setFechaCreacion(LocalDate.now());
+        promesa.setPolitico(politico);
+
+        Promesa saved = promesaRepository.save(promesa);
+        if (politico.getPromesas() == null) {
+            politico.setPromesas(new ArrayList<>());
+        }
+        politico.getPromesas().add(saved);
+        politicoRepository.save(politico);
+
+        return mapToPromesaDTO(saved);
+    }
+
+    public List<PromesaDTO> listarPromesasPorPolitico(Integer politicoId) {
+        if (!politicoRepository.existsById(politicoId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Político no encontrado");
+        }
+        return promesaRepository.findByPoliticoId(politicoId).stream()
+                .map(this::mapToPromesaDTO)
+                .collect(Collectors.toList());
+    }
+
+    private PromesaDTO mapToPromesaDTO(Promesa promesa) {
+        return PromesaDTO.builder()
+                .id(promesa.getId())
+                .descripcion(promesa.getDescripcion())
+                .categoria(promesa.getCategoria())
+                .fechaCreacion(promesa.getFechaCreacion())
+                .politicoId(promesa.getPolitico() != null ? promesa.getPolitico().getId() : null)
+                .build();
     }
 
     private static CartaPoliticoDTO mapToCartaDTO(Politico p) {

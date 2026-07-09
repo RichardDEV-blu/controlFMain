@@ -6,12 +6,15 @@ import com.controlf.db.schema.Comentario;
 import com.controlf.dto.ActualizarCampoPoliticoRequestDTO;
 import com.controlf.dto.CalificacionRequestDTO;
 import com.controlf.dto.ComentarioRequestDTO;
+import com.controlf.dto.PromesaDTO;
+import com.controlf.dto.PromesaRequestDTO;
 import com.controlf.dto.SimpleItemDTO;
 import com.controlf.service.PoliticoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -68,6 +71,17 @@ public class PoliticoController {
     public void postCalificacion(@PathVariable Integer id, @Valid @RequestBody CalificacionRequestDTO request, Authentication authentication) {
         Integer currentUserId = ((AuthenticatedUser) authentication.getPrincipal()).getId();
         politicoService.addCalificacion(id, request, currentUserId);
+    }
+
+    @PostMapping("/{politicoId}/promesas")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PromesaDTO> crearPromesa(@PathVariable Integer politicoId, @Valid @RequestBody PromesaRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(politicoService.crearPromesa(politicoId, request));
+    }
+
+    @GetMapping("/{politicoId}/promesas")
+    public List<PromesaDTO> listarPromesas(@PathVariable Integer politicoId) {
+        return politicoService.listarPromesasPorPolitico(politicoId);
     }
 
     @PatchMapping("/comentarios/{comentarioId}")

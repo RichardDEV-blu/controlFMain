@@ -1,18 +1,22 @@
 package com.controlf.auth;
 
+import com.controlf.db.repository.ComentarioRepository;
 import com.controlf.db.repository.PoliticoRepository;
 import com.controlf.db.repository.UsuarioRepository;
+import com.controlf.db.schema.Comentario;
 import com.controlf.db.schema.Politico;
 import com.controlf.db.schema.Usuario;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -24,17 +28,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+
 
 @SpringBootTest
-@AutoConfigureMockMvc
 @Transactional
 class AuthWorkflowTests {
 
     @Autowired
+    private WebApplicationContext webApplicationContext;
+
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+   private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -43,7 +49,17 @@ class AuthWorkflowTests {
     private PoliticoRepository politicoRepository;
 
     @Autowired
+    private ComentarioRepository comentarioRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
+
+   @BeforeEach
+void setUp() {
+    mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+            .apply(springSecurity())
+            .build();
+}
 
     @Test
     void shouldRegisterAndLoginUser() throws Exception {
@@ -127,24 +143,20 @@ class AuthWorkflowTests {
         attacker.setActivo(true);
         attacker = usuarioRepository.save(attacker);
 
-        Politico politico = new Politico();
-        politico.setNombreCompleto("Político Test");
-        politico.setPatrimonioDeclarado(BigDecimal.ZERO);
-        politico.setEstaActivo(true);
-        politico = politicoRepository.save(politico);
-
-        com.controlf.db.schema.Comentario comentario = new com.controlf.db.schema.Comentario();
+        Comentario comentario = new Comentario();
         comentario.setTexto("Comentario del propietario");
         comentario.setUsuario(owner);
         comentario.setEsBasadoEnHechos(false);
         comentario.setFecha(java.time.LocalDateTime.now());
-        comentario = politico.getComentarios() == null ? null : null;
+        comentarioRepository.save(comentario);
 
-        // Persist comment directly through repository so it is linked to the user and politician.
-        com.controlf.db.repository.ComentarioRepository comentarioRepository =
-                org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor.ignore;
-        // placeholder to keep compile structure unchanged
-        throw new UnsupportedOperationException("Not implemented");
+        String token = obtainToken("attacker@test.dev", "Password123");
+
+        mockMvc.perform(patch("/api/politicos/comentarios/{comentarioId}", comentario.getId())
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"texto\":\"Intento de modificar\",\"usuarioId\":1}"))
+                .andExpect(status().isForbidden());
     }
 
     private String obtainToken(String email, String password) throws Exception {

@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
@@ -16,7 +18,7 @@ import java.util.Map;
 @Service
 public class JwtService {
 
-    @Value("${app.jwt.secret:change-me-in-production}")
+    @Value("${app.jwt.secret:controlf-2026-jwt-signing-key-0123456789abcdef0123456789abcdef}")
     private String jwtSecret;
 
     @Value("${app.jwt.expiration-hours:24}")
@@ -26,7 +28,17 @@ public class JwtService {
 
     @PostConstruct
     void init() {
-        this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        String normalizedSecret = jwtSecret == null ? "" : jwtSecret.trim();
+        if (normalizedSecret.isBlank()) {
+            normalizedSecret = "controlf-2026-jwt-signing-key-0123456789abcdef0123456789abcdef";
+        }
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashed = digest.digest(normalizedSecret.getBytes(StandardCharsets.UTF_8));
+            this.secretKey = Keys.hmacShaKeyFor(hashed);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Unable to initialize JWT signing key", e);
+        }
     }
 
     public String generateToken(String email, String role) {

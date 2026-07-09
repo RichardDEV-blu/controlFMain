@@ -18,6 +18,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final CustomUserDetailsService customUserDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -30,7 +31,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String email = claims.get("email", String.class);
                 String role = claims.get("role", String.class);
                 if (email != null && role != null) {
-                    var principal = new AuthenticatedUser(null, email, null, role, true);
+                    var principal = (AuthenticatedUser) customUserDetailsService.loadUserByUsername(email);
                     var auth = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
                     auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(auth);

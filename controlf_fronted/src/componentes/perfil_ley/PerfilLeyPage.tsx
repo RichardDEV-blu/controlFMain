@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import ContenidoLey from './Componente_contenido_ley/ContenidoLey';
 import ResultadoVotacion from './Componente_resultado_votacion/ResultadoVotacion';
 import AuditoriaLey from './Componente_auditoria_coherencia/AuditoriaLey';
@@ -16,6 +17,7 @@ const PerfilLeyPage: React.FC = () => {
   const [asistencia, setAsistencia] = useState('true');
   const [isSavingLey, setIsSavingLey] = useState(false);
   const [mensajeLey, setMensajeLey] = useState<string | null>(null);
+  const { apiFetch, isAuthenticated, role } = useAuth();
 
   const fetchPerfil = async () => {
     setIsLoading(true);
@@ -37,15 +39,16 @@ const PerfilLeyPage: React.FC = () => {
 
   const handleAddComentario = async (texto: string, puntaje: number) => {
     try {
-      await fetch(`/api/leyes/${id}/comentarios`, {
+      if (!isAuthenticated) return;
+      await apiFetch(`/api/leyes/${id}/comentarios`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto, usuarioId: 1 })
+        body: JSON.stringify({ texto })
       });
-      await fetch(`/api/leyes/${id}/calificaciones`, {
+      await apiFetch(`/api/leyes/${id}/calificaciones`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ puntaje, usuarioId: 1 })
+        body: JSON.stringify({ puntaje })
       });
       fetchPerfil();
     } catch (error) {
@@ -61,7 +64,7 @@ const PerfilLeyPage: React.FC = () => {
     setMensajeLey(null);
 
     try {
-      const response = await fetch(`/api/leyes/${id}/categoria`, {
+      const response = await apiFetch(`/api/leyes/${id}/categoria`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ categoria: categoria.trim().toUpperCase() })
@@ -86,7 +89,7 @@ const PerfilLeyPage: React.FC = () => {
     setMensajeLey(null);
 
     try {
-      const response = await fetch(`/api/leyes/${id}/estado`, {
+      const response = await apiFetch(`/api/leyes/${id}/estado`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado: estado.trim().toUpperCase() })
@@ -111,7 +114,7 @@ const PerfilLeyPage: React.FC = () => {
     setMensajeLey(null);
 
     try {
-      const response = await fetch(`/api/leyes/${id}/votos/${votoId}/asistencia`, {
+      const response = await apiFetch(`/api/leyes/${id}/votos/${votoId}/asistencia`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ asistencia: asistencia === 'true' })
@@ -165,6 +168,7 @@ const PerfilLeyPage: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
         <h3 className="text-lg font-black text-primary-navy mb-4">Gestionar ley</h3>
         <p className="text-sm text-slate-500 mb-4">Actualiza categoría, estado y asistencia de votos usando los endpoints del backend.</p>
+        {role !== 'ADMIN' && <p className="mb-4 text-sm font-semibold text-amber-700">Solo los administradores pueden modificar esta información.</p>}
 
         <div className="grid gap-6 md:grid-cols-2">
           <form onSubmit={handleActualizarCategoria} className="space-y-3 rounded-xl border border-slate-100 p-4">
@@ -176,7 +180,7 @@ const PerfilLeyPage: React.FC = () => {
               placeholder="EDUCACION"
               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 focus:border-accent-blue focus:outline-none"
             />
-            <button type="submit" disabled={isSavingLey} className="rounded-xl bg-primary-navy px-4 py-3 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-60">
+            <button type="submit" disabled={isSavingLey || role !== 'ADMIN'} className="rounded-xl bg-primary-navy px-4 py-3 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-60">
               {isSavingLey ? 'Guardando...' : 'Actualizar categoría'}
             </button>
           </form>
@@ -190,7 +194,7 @@ const PerfilLeyPage: React.FC = () => {
               placeholder="APROBADA"
               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 focus:border-accent-blue focus:outline-none"
             />
-            <button type="submit" disabled={isSavingLey} className="rounded-xl bg-accent-blue px-4 py-3 text-sm font-bold text-white hover:bg-blue-600 disabled:opacity-60">
+            <button type="submit" disabled={isSavingLey || role !== 'ADMIN'} className="rounded-xl bg-accent-blue px-4 py-3 text-sm font-bold text-white hover:bg-blue-600 disabled:opacity-60">
               {isSavingLey ? 'Guardando...' : 'Actualizar estado'}
             </button>
           </form>
@@ -214,7 +218,7 @@ const PerfilLeyPage: React.FC = () => {
               <option value="true">Asistió</option>
               <option value="false">No asistió</option>
             </select>
-            <button type="submit" disabled={isSavingLey} className="rounded-xl bg-success-green px-4 py-3 text-sm font-bold text-white hover:bg-green-600 disabled:opacity-60">
+            <button type="submit" disabled={isSavingLey || role !== 'ADMIN'} className="rounded-xl bg-success-green px-4 py-3 text-sm font-bold text-white hover:bg-green-600 disabled:opacity-60">
               {isSavingLey ? 'Guardando...' : 'Actualizar asistencia'}
             </button>
           </div>

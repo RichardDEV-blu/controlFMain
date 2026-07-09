@@ -61,7 +61,13 @@ public class Usuario {
         this.comentarios = comentarios;
         this.calificaciones = calificaciones;
     }
-
+        
+    @PrePersist
+protected void onCreate() {
+    if (this.fechaRegistro == null) {
+        this.fechaRegistro = LocalDateTime.now();
+    }
+}
     public enum Rol {
         ADMIN,
         CIUDADANO

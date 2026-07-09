@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import InfoBasica from './InfoBasica';
 import MetricaCoherencia from './MetricaCoherencia';
 import HistorialCoherencia from './HistorialCoherencia';
 import ParticipacionCiudadana from './ParticipacionCiudadana';
 import { type PerfilPolitico } from './type_perfil_politico';
+
+interface PromesaItem {
+  id: number;
+  descripcion: string;
+  categoria: string;
+  fechaCreacion: string;
+  politicoId: number;
+}
 
 const PerfilPoliticoPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +25,11 @@ const PerfilPoliticoPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [mensajeEdicion, setMensajeEdicion] = useState<string | null>(null);
   const [historialCambios, setHistorialCambios] = useState<Array<{ campo: string; valor: string; fecha: string }>>([]);
+  const [promesas, setPromesas] = useState<PromesaItem[]>([]);
+  const [nuevaPromesa, setNuevaPromesa] = useState({ descripcion: '', categoria: '' });
+  const [isSavingPromesa, setIsSavingPromesa] = useState(false);
+  const [mensajePromesa, setMensajePromesa] = useState<string | null>(null);
+  const { apiFetch, isAuthenticated, role } = useAuth();
 
   const fetchPerfil = async () => {
     setIsLoading(true);
@@ -32,27 +46,71 @@ const PerfilPoliticoPage: React.FC = () => {
     }
   };
 
+  const fetchPromesas = async () => {
+    if (!id) return;
+    try {
+      const response = await fetch(`/api/politicos/${id}/promesas`);
+      if (!response.ok) throw new Error('No se pudieron cargar las promesas');
+      const data = await response.json();
+      setPromesas(data);
+    } catch (error) {
+      console.error('Error al cargar promesas:', error);
+    }
+  };
+
   useEffect(() => {
     fetchPerfil();
+    fetchPromesas();
   }, [id]);
 
   const handleAddComentario = async (texto: string, puntaje: number) => {
     try {
-      await fetch(`/api/politicos/${id}/comentarios`, {
+      if (!isAuthenticated) return;
+      await apiFetch(`/api/politicos/${id}/comentarios`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto, usuarioId: 1 })
+        body: JSON.stringify({ texto })
       });
 
-      await fetch(`/api/politicos/${id}/calificaciones`, {
+      await apiFetch(`/api/politicos/${id}/calificaciones`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ puntaje, usuarioId: 1 })
+        body: JSON.stringify({ puntaje })
       });
 
       fetchPerfil();
     } catch (error) {
       console.error("Error al publicar comentario:", error);
+    }
+  };
+
+  const handleCrearPromesa = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!id || !role || role !== 'ADMIN' || !nuevaPromesa.descripcion.trim() || !nuevaPromesa.categoria.trim()) return;
+
+    setIsSavingPromesa(true);
+    setMensajePromesa(null);
+
+    try {
+      const response = await apiFetch(`/api/politicos/${id}/promesas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          descripcion: nuevaPromesa.descripcion.trim(),
+          categoria: nuevaPromesa.categoria.trim()
+        })
+      });
+
+      if (!response.ok) throw new Error('No se pudo crear la promesa');
+
+      setNuevaPromesa({ descripcion: '', categoria: '' });
+      setMensajePromesa('Promesa creada correctamente.');
+      await fetchPromesas();
+    } catch (error) {
+      console.error('Error al crear promesa:', error);
+      setMensajePromesa('No se pudo crear la promesa.');
+    } finally {
+      setIsSavingPromesa(false);
     }
   };
 
@@ -64,7 +122,7 @@ const PerfilPoliticoPage: React.FC = () => {
     setMensajeEdicion(null);
 
     try {
-      const response = await fetch(`/api/politicos/${id}`, {
+      const response = await apiFetch(`/api/politicos/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ campo: campoEdicion, valor: valorEdicion.trim() })
@@ -130,6 +188,7 @@ const PerfilPoliticoPage: React.FC = () => {
             <h3 className="text-lg font-black text-primary-navy">Actualizar patrimonio o antecedentes</h3>
             <p className="text-sm text-slate-500">Edición mínima conectada al endpoint real del político.</p>
           </div>
+          {role !== 'ADMIN' && <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">Solo administradores</span>}
         </div>
 
         <form onSubmit={handleEditarPolitico} className="space-y-4">
@@ -153,7 +212,7 @@ const PerfilPoliticoPage: React.FC = () => {
 
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || role !== 'ADMIN'}
               className="rounded-xl bg-primary-navy px-4 py-3 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-60"
             >
               {isSaving ? 'Guardando...' : 'Guardar'}
@@ -178,6 +237,63 @@ const PerfilPoliticoPage: React.FC = () => {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-black text-primary-navy">Promesas del político</h3>
+            <p className="text-sm text-slate-500">Listado público y creación para administradores.</p>
+          </div>
+          {role === 'ADMIN' && (
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Modo admin</span>
+          )}
+        </div>
+
+        {role === 'ADMIN' && (
+          <form onSubmit={handleCrearPromesa} className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="grid gap-3 md:grid-cols-[1.3fr_0.8fr_auto]">
+              <input
+                type="text"
+                value={nuevaPromesa.descripcion}
+                onChange={(event) => setNuevaPromesa((prev) => ({ ...prev, descripcion: event.target.value }))}
+                placeholder="Descripción de la promesa"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 focus:border-accent-blue focus:outline-none"
+              />
+              <input
+                type="text"
+                value={nuevaPromesa.categoria}
+                onChange={(event) => setNuevaPromesa((prev) => ({ ...prev, categoria: event.target.value }))}
+                placeholder="Categoría"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 focus:border-accent-blue focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={isSavingPromesa || !nuevaPromesa.descripcion.trim() || !nuevaPromesa.categoria.trim()}
+                className="rounded-xl bg-primary-navy px-4 py-3 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-60"
+              >
+                {isSavingPromesa ? 'Guardando...' : 'Agregar'}
+              </button>
+            </div>
+            {mensajePromesa && <p className="mt-3 text-sm text-success-green">{mensajePromesa}</p>}
+          </form>
+        )}
+
+        {promesas.length === 0 ? (
+          <p className="text-sm text-slate-500">No hay promesas registradas para este político.</p>
+        ) : (
+          <div className="space-y-3">
+            {promesas.map((promesa) => (
+              <div key={promesa.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-primary-navy">{promesa.descripcion}</p>
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">{promesa.categoria}</span>
+                </div>
+                <p className="mt-2 text-xs text-slate-500">Creada el {promesa.fechaCreacion}</p>
+              </div>
+            ))}
           </div>
         )}
       </div>

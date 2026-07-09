@@ -33,8 +33,7 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(PasswordEncoder passwordEncoder) {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(customUserDetailsService);
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(customUserDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
         return new ProviderManager(provider);
     }
@@ -44,11 +43,17 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/api/leyes/**", "/api/politicos/**", "/api/dashboard/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/leyes/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/politicos/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/dashboard/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
                         .requestMatchers("/api/admin/**", "/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/leyes/*/comentarios", "/api/leyes/*/calificaciones", "/api/politicos/*/comentarios", "/api/politicos/*/calificaciones").hasAnyRole("CIUDADANO", "ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/leyes/*/categoria", "/api/leyes/*/estado", "/api/leyes/*/votos/*/asistencia", "/api/politicos/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/politicos/comentarios/*", "/api/leyes/comentarios/*")
+    .hasAnyRole("CIUDADANO", "ADMIN")
+.requestMatchers(HttpMethod.DELETE, "/api/politicos/comentarios/*", "/api/leyes/comentarios/*")
+    .hasAnyRole("CIUDADANO", "ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

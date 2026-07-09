@@ -13,13 +13,15 @@ public class AuthenticatedUser implements UserDetails {
     private final String email;
     private final String nombre;
     private final String role;
+    private final String passwordHash;
     private final boolean activo;
 
-    public AuthenticatedUser(Integer id, String email, String nombre, String role, boolean activo) {
+    public AuthenticatedUser(Integer id, String email, String nombre, String role, String passwordHash, boolean activo) {
         this.id = id;
         this.email = email;
         this.nombre = nombre;
         this.role = role;
+        this.passwordHash = passwordHash;
         this.activo = activo;
     }
 
@@ -42,7 +44,7 @@ public class AuthenticatedUser implements UserDetails {
 
     @Override
     public String getPassword() {
-        return "";
+        return passwordHash;
     }
 
     @Override
