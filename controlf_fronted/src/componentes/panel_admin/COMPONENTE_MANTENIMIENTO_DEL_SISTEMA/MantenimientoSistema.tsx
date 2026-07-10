@@ -52,35 +52,8 @@ const MantenimientoSistema: React.FC<MantenimientoSistemaProps> = ({ info, onAcc
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4">
-          <button 
-            onClick={() => onAccion('BACKUP')}
-            className="flex items-center justify-center gap-2 py-4 bg-white border border-slate-200 rounded-xl text-sm font-black text-slate-600 hover:bg-slate-50 hover:border-accent-blue/50 transition-all shadow-sm"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            EJECUTAR RESPALDO MANUAL
-          </button>
-          <button 
-            onClick={() => onAccion('CACHE_CLEAR')}
-            className="flex items-center justify-center gap-2 py-4 bg-white border border-slate-200 rounded-xl text-sm font-black text-slate-600 hover:bg-slate-50 hover:border-accent-blue/50 transition-all shadow-sm"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 5H9l-7 7 7 7h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
-            LIMPIAR CACHÉ DEL SISTEMA
-          </button>
-          <button 
-            onClick={() => onAccion('IMPORT_LEYES')}
-            className="flex items-center justify-center gap-2 py-4 bg-accent-blue text-white rounded-xl text-sm font-black hover:bg-blue-600 transition-all shadow-lg"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            IMPORTAR LEYES DESDE API
-          </button>
-          <button
-              onClick={() => onAccion('IMPORT_POLITICOS')}
-              className="flex items-center justify-center gap-2 py-4 bg-emerald-600 text-white rounded-xl text-sm font-black hover:bg-emerald-700 transition-all shadow-lg"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            SINCRONIZAR POLÍTICOS
-          </button>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          No hay acciones disponibles en esta vista.
         </div>
       </div>
     </div>

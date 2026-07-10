@@ -15,6 +15,9 @@ const MotorCoherencia: React.FC = () => {
   const [selectedLey, setSelectedLey] = useState('');
   const [impacto, setImpacto] = useState('POSITIVO');
   const [analisis, setAnalisis] = useState('');
+  const [nuevaPromesaDescripcion, setNuevaPromesaDescripcion] = useState('');
+  const [nuevaPromesaCategoria, setNuevaPromesaCategoria] = useState('');
+  const [nuevaPromesaFecha, setNuevaPromesaFecha] = useState('');
 
   useEffect(() => {
     fetch('/api/admin/motor/data')
@@ -54,6 +57,38 @@ const MotorCoherencia: React.FC = () => {
       setAnalisis('');
     } catch (error) {
       console.error("Error al generar vínculo:", error);
+    }
+  };
+
+  const handleAgregarPromesa = async () => {
+    if (!selectedPolitico || !nuevaPromesaDescripcion.trim()) return;
+
+    try {
+      const response = await fetch('/api/admin/promesas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          politicoId: parseInt(selectedPolitico, 10),
+          descripcion: nuevaPromesaDescripcion.trim(),
+          categoria: nuevaPromesaCategoria.trim() || 'General',
+          fechaPromesa: nuevaPromesaFecha ? nuevaPromesaFecha : null
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('No se pudo crear la promesa');
+      }
+
+      alert('Promesa creada correctamente');
+      setNuevaPromesaDescripcion('');
+      setNuevaPromesaCategoria('');
+      setNuevaPromesaFecha('');
+      fetch(`/api/admin/politicos/${selectedPolitico}/promesas`)
+        .then(res => res.json())
+        .then(data => setPromesas(data));
+    } catch (error) {
+      console.error('Error al crear promesa:', error);
+      alert('Error al crear la promesa');
     }
   };
 
@@ -108,6 +143,41 @@ const MotorCoherencia: React.FC = () => {
         </div>
 
         <div className="space-y-6">
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Agregar nueva promesa</label>
+              <span className="text-[10px] text-slate-400">Opcional</span>
+            </div>
+            <textarea
+              value={nuevaPromesaDescripcion}
+              onChange={(e) => setNuevaPromesaDescripcion(e.target.value)}
+              placeholder="Escribe la promesa del político..."
+              className="w-full h-24 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 transition-all"
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input
+                value={nuevaPromesaCategoria}
+                onChange={(e) => setNuevaPromesaCategoria(e.target.value)}
+                placeholder="Categoría"
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 transition-all"
+              />
+              <input
+                type="date"
+                value={nuevaPromesaFecha}
+                onChange={(e) => setNuevaPromesaFecha(e.target.value)}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 transition-all"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleAgregarPromesa}
+              disabled={!selectedPolitico || !nuevaPromesaDescripcion.trim()}
+              className="w-full py-3 bg-accent-blue text-white rounded-xl font-black text-sm shadow-sm hover:bg-blue-600 transition-all disabled:opacity-50"
+            >
+              AGREGAR PROMESA
+            </button>
+          </div>
+
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">4. Impacto Esperado</label>
             <div className="flex gap-4">

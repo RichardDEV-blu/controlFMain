@@ -4,6 +4,7 @@ import com.controlf.db.repository.*;
 import com.controlf.db.schema.*;
 import com.controlf.db.schema.enums.ImpactoEsperado;
 import com.controlf.db.schema.enums.NivelCoherencia;
+import com.controlf.dto.CrearPromesaRequestDTO;
 import com.controlf.dto.PanelControlDTO;
 import com.controlf.dto.PanelMantenimientoDTO;
 import com.controlf.dto.VinculoRequestDTO;
@@ -54,6 +55,20 @@ public class AdminService {
         return promesaRepository.findByPoliticoId(politicoId).stream()
                 .map(p -> new SimpleItemDTO(p.getId().toString(), p.getDescripcion()))
                 .collect(Collectors.toList());
+    }
+
+    public void crearPromesa(CrearPromesaRequestDTO request) {
+        Politico politico = politicoRepository.findById(request.getPoliticoId()).orElseThrow();
+
+        Promesa promesa = new Promesa();
+        promesa.setDescripcion(request.getDescripcion());
+        promesa.setCategoria(request.getCategoria());
+        promesa.setFechaPromesa(request.getFechaPromesa());
+        promesa.setPolitico(politico);
+        promesa.setVinculos(List.of());
+
+        promesaRepository.save(promesa);
+        registrarLog("CREAR_PROMESA", "Promesa creada para político " + politico.getId());
     }
 
     public void crearVinculoCoherencia(VinculoRequestDTO request) {
