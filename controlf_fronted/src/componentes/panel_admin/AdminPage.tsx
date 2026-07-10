@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import PanelControlSeguridad from './COMPONENTE_PANEL_DE_CONTROL/PanelControlSeguridad';
 import MotorCoherencia from './COMPONENTE_MOTOR_COHERENCIA/MotorCoherencia';
 import MantenimientoSistema from './COMPONENTE_MANTENIMIENTO_DEL_SISTEMA/MantenimientoSistema';
+import { useAuth } from '../../context/AuthContext';
 
 const AdminPage: React.FC = () => {
+  const { apiFetch } = useAuth();
   const [seguridad, setSeguridad] = useState<any>(null);
   const [mantenimiento, setMantenimiento] = useState<any>(null);
   const [historico, setHistorico] = useState<any>(null);
@@ -34,14 +36,14 @@ const AdminPage: React.FC = () => {
     setIsLoading(true);
     try {
       const [segRes, mantRes, historicoRes] = await Promise.all([
-        fetch('/api/admin/panel'),
-        fetch('/api/admin/mantenimiento'),
-        fetch('/api/admin/historico')
+        apiFetch('/api/admin/panel'),
+        apiFetch('/api/admin/mantenimiento'),
+        apiFetch('/api/admin/historico')
       ]);
 
-      setSeguridad(await segRes.json());
-      setMantenimiento(await mantRes.json());
-      setHistorico(await historicoRes.json());
+      if (segRes.ok) setSeguridad(await segRes.json());
+      if (mantRes.ok) setMantenimiento(await mantRes.json());
+      if (historicoRes.ok) setHistorico(await historicoRes.json());
     } catch (error) {
       console.error("Error al cargar datos administrativos:", error);
     } finally {
@@ -51,7 +53,7 @@ const AdminPage: React.FC = () => {
 
   const loadImportablePoliticos = async () => {
     try {
-      const response = await fetch('/api/politicos/importables');
+      const response = await apiFetch('/api/politicos/importables');
       const data = await response.json();
       setImportablePoliticos(data || []);
     } catch (error) {
@@ -77,7 +79,7 @@ const AdminPage: React.FC = () => {
     const loadAssemblyMembers = async () => {
       try {
         setIsLoadingMembers(true);
-        const response = await fetch('/admin/assembly-members');
+        const response = await apiFetch('/admin/assembly-members');
         const data = await response.json();
         setAssemblyMembers(data || []);
       } catch (error) {
@@ -102,7 +104,7 @@ const AdminPage: React.FC = () => {
     }
 
     try {
-      await fetch(`/api/admin${endpoint}`, { method: 'POST' });
+      await apiFetch(`/api/admin${endpoint}`, { method: 'POST' });
       alert(`Acción ${accion} ejecutada correctamente`);
       fetchData(); // Refrescar info
     } catch (error) {
@@ -114,7 +116,7 @@ const AdminPage: React.FC = () => {
     if (!confirm("¿Deseas poblar la base de datos con datos de ejemplo? Esto solo funcionará si la base de datos está vacía.")) return;
 
     try {
-      const response = await fetch('/api/admin/seed', { method: 'POST' });
+      const response = await apiFetch('/api/admin/seed', { method: 'POST' });
       if (response.ok) {
         alert("Base de datos poblada correctamente.");
         fetchData();
@@ -149,7 +151,7 @@ const AdminPage: React.FC = () => {
 
     try {
       setIsLoadingVotings(true);
-      const response = await fetch(`/admin/assembly-members/${memberId}/votings`);
+      const response = await apiFetch(`/admin/assembly-members/${memberId}/votings`);
       const data = await response.json();
       setVotings(data || []);
     } catch (error) {
@@ -185,7 +187,7 @@ const AdminPage: React.FC = () => {
   const handleSyncPoliticos = async () => {
     try {
       setIsSyncingPoliticos(true);
-      const response = await fetch('/api/admin/import-politicos', { method: 'POST' });
+      const response = await apiFetch('/api/admin/import-politicos', { method: 'POST' });
       const data = await response.json();
       setPoliticoSyncResult(data);
       await loadImportablePoliticos();
@@ -233,7 +235,7 @@ const AdminPage: React.FC = () => {
 
     try {
       setIsImporting(true);
-      const response = await fetch(`/admin/import-votings/${selectedMemberId}/selected`, {
+      const response = await apiFetch(`/admin/import-votings/${selectedMemberId}/selected`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -254,7 +256,7 @@ const AdminPage: React.FC = () => {
 
     try {
       setIsImportingPoliticos(true);
-      const response = await fetch('/admin/import-leyes', {
+      const response = await apiFetch('/admin/import-leyes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ politicoIds: selectedPoliticoIds.map((id) => Number(id)) })
@@ -312,10 +314,12 @@ const AdminPage: React.FC = () => {
         </button>
       </div>
 
-      <PanelControlSeguridad
-        titulo={seguridad.tituloSeccion}
-        opciones={seguridad.opciones}
-      />
+      {seguridad && (
+        <PanelControlSeguridad
+          titulo={seguridad.tituloSeccion}
+          opciones={seguridad.opciones}
+        />
+      )}
 
       <MotorCoherencia />
 
@@ -393,72 +397,87 @@ const AdminPage: React.FC = () => {
 
          
                  
-<div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
-  <div className="px-8 py-6 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
-    <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h4 className="text-sm font-black text-primary-navy uppercase tracking-wide flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20V10" /><path d="M18 20V4" /><path d="M6 20v-4" /></svg>
-          Importaciones de datos
-        </h4>
-        <p className="text-sm text-slate-500 mt-1">Elige la opción que mejor se adapte a tu objetivo. Ambas usan los endpoints reales del sistema y no dependen una de la otra.</p>
-      </div>
-      <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm">
-        <span className="h-2.5 w-2.5 rounded-full bg-accent-blue"></span>
-        Dos modos disponibles
-      </div>
+<div className="mb-8">
+  <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+    <div>
+      <h4 className="text-sm font-black text-primary-navy uppercase tracking-wide flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20V10" /><path d="M18 20V4" /><path d="M6 20v-4" /></svg>
+        Importaciones de datos
+      </h4>
+      <p className="text-sm text-slate-500 mt-1">Dos caminos independientes: elige el que se ajuste a tu objetivo. Cada uno usa endpoints reales del sistema y funciona por separado.</p>
+    </div>
+    <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm">
+      <span className="h-2.5 w-2.5 rounded-full bg-accent-blue"></span>
+      Dos caminos independientes
     </div>
   </div>
 
-  <div className="p-6 lg:p-8 space-y-6">
-    <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 shadow-sm">
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-navy text-sm font-black text-white">
-          1
+  {/* ===== PASO OBLIGATORIO PREVIO: Sincronizar catálogo local (necesario para AMBOS caminos) ===== */}
+  <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 shadow-sm overflow-hidden mb-6">
+    <div className="px-6 py-4 bg-amber-100/70 border-b border-amber-200 flex items-center gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+      </div>
+      <div>
+        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-amber-700">Paso obligatorio · Ejecutar primero</p>
+        <h3 className="text-lg font-black text-amber-900">Sincronizar catálogo local</h3>
+      </div>
+    </div>
+    <div className="p-6">
+      <p className="text-sm font-semibold text-amber-800">Este paso es imprescindible para que funcionen <span className="underline decoration-amber-400 underline-offset-2">ambos caminos</span>. Debes ejecutarlo antes que cualquier importación.</p>
+      <p className="mt-2 text-sm text-amber-700/90">Carga los candidatos disponibles en la base local desde <span className="font-semibold">/api/admin/import-politicos</span>. Sin esta sincronización, ni la importación masiva ni la filtrada tendrán datos con los que trabajar.</p>
+      <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between rounded-2xl border border-amber-200 bg-white p-4">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-600">Origen de datos</p>
+          <p className="mt-1 text-sm text-slate-600">Guarda los candidatos en la base local para que puedan usarse en los flujos posteriores.</p>
         </div>
-        <div className="flex-1">
-          <div className="inline-flex items-center rounded-full bg-primary-navy px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] text-white">
-            Sincronización inicial (obligatoria)
+        {!hasSyncedPoliticos ? (
+          <button
+            type="button"
+            onClick={handleSyncPoliticos}
+            disabled={isSyncingPoliticos}
+            className="rounded-xl bg-amber-500 px-4 py-3 text-sm font-black text-white hover:bg-amber-600 transition-all shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSyncingPoliticos ? 'Sincronizando...' : 'Sincronizar catálogo local'}
+          </button>
+        ) : (
+          <p className="inline-flex items-center gap-2 text-sm font-bold text-emerald-600"><span className="h-2 w-2 rounded-full bg-emerald-500"></span>Catálogo local sincronizado</p>
+        )}
+      </div>
+      {politicoSyncResult && (
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-white p-4">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Resultado de sincronización</p>
+          <div className="mt-3 grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold text-slate-500 uppercase">Encontrados</p><p className="mt-2 text-xl font-black text-primary-navy">{politicoSyncResult.found ?? 0}</p></div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold text-slate-500 uppercase">Importados</p><p className="mt-2 text-xl font-black text-primary-navy">{politicoSyncResult.imported ?? 0}</p></div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold text-slate-500 uppercase">Ignorados</p><p className="mt-2 text-xl font-black text-primary-navy">{politicoSyncResult.ignored ?? 0}</p></div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold text-slate-500 uppercase">Duplicados</p><p className="mt-2 text-xl font-black text-primary-navy">{politicoSyncResult.duplicates ?? 0}</p></div>
           </div>
-          <h5 className="mt-3 text-lg font-black text-primary-navy">Sincronizar catálogo local</h5>
-          <p className="mt-2 text-sm text-slate-600">Primero debes cargar los candidatos disponibles en la base local desde <span className="font-semibold">/api/admin/import-politicos</span>. Después podrás elegirlos para importar leyes.</p>
-          <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between rounded-2xl border border-slate-200 bg-white p-4">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Origen de datos</p>
-              <p className="mt-1 text-sm text-slate-600">Esta sincronización guarda candidatos en la base local para que puedan usarse en los flujos posteriores.</p>
-            </div>
-            {!hasSyncedPoliticos ? (
-              <button
-                type="button"
-                onClick={handleSyncPoliticos}
-                disabled={isSyncingPoliticos}
-                className="rounded-xl bg-primary-navy px-4 py-3 text-sm font-black text-white hover:bg-slate-800 transition-all shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isSyncingPoliticos ? 'Sincronizando...' : 'Sincronizar catálogo local'}
-              </button>
-            ) : (
-              <p className="text-sm font-semibold text-slate-500">El catálogo local ya está sincronizado.</p>
-            )}
-          </div>
-          {politicoSyncResult && (
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Resultado de sincronización</p>
-              <div className="mt-3 grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold text-slate-500 uppercase">Encontrados</p><p className="mt-2 text-xl font-black text-primary-navy">{politicoSyncResult.found ?? 0}</p></div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold text-slate-500 uppercase">Importados</p><p className="mt-2 text-xl font-black text-primary-navy">{politicoSyncResult.imported ?? 0}</p></div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold text-slate-500 uppercase">Ignorados</p><p className="mt-2 text-xl font-black text-primary-navy">{politicoSyncResult.ignored ?? 0}</p></div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold text-slate-500 uppercase">Duplicados</p><p className="mt-2 text-xl font-black text-primary-navy">{politicoSyncResult.duplicates ?? 0}</p></div>
-              </div>
-            </div>
-          )}
+        </div>
+      )}
+    </div>
+  </div>
+
+  {/* ===== CAMINO A: Importar todas las leyes (seleccionar -> importar) ===== */}
+  <div className="rounded-2xl shadow-sm border border-slate-200 bg-white overflow-hidden mb-6">
+    <div className="px-6 py-5 bg-gradient-to-r from-primary-navy to-slate-800 text-white">
+      <div className="flex items-center gap-3">
+        <div className="rounded-2xl bg-white/10 p-2.5 text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5v14a9 3 0 0 0 18 0V5" /><path d="M3 12a9 3 0 0 0 18 0" /></svg>
+        </div>
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-[0.25em] text-white/60">Camino A · Importación masiva</p>
+          <h3 className="text-lg font-black">Importar todas las leyes</h3>
         </div>
       </div>
-    </section>
+      <p className="mt-3 text-sm text-white/80">Con el catálogo ya sincronizado, selecciona los candidatos y trae todas sus leyes en una sola operación.</p>
+    </div>
 
-    <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 shadow-sm">
+    <div className="p-6 space-y-6">
+      <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 shadow-sm">
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-accent-blue text-sm font-black text-white">
-          2
+          1
         </div>
         <div className="flex-1">
           <div className="inline-flex items-center rounded-full bg-accent-blue px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] text-white">
@@ -533,11 +552,10 @@ const AdminPage: React.FC = () => {
       </div>
     </section>
 
-    <div className="flex flex-col gap-6">
       <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 shadow-sm">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-navy text-sm font-black text-white">
-            3A
+            2
           </div>
           <div className="flex-1">
             <div className="inline-flex items-center rounded-full bg-primary-navy px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] text-white">
@@ -572,16 +590,24 @@ const AdminPage: React.FC = () => {
       </section>
           
 
-            <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 shadow-sm">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-accent-blue text-sm font-black text-white">
-                  3B
-                </div>
+      </div>
+    </div>
+    {/* ===== CAMINO B: Importar filtrando (votaciones específicas, flujo independiente) ===== */}
+    <div className="rounded-2xl shadow-sm border border-slate-200 bg-white overflow-hidden">
+      <div className="px-6 py-5 bg-gradient-to-r from-accent-blue to-blue-600 text-white">
+        <div className="flex items-center gap-3">
+          <div className="rounded-2xl bg-white/10 p-2.5 text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
+          </div>
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.25em] text-white/60">Camino B · Importación selectiva</p>
+            <h3 className="text-lg font-black">Importar filtrando</h3>
+          </div>
+        </div>
+        <p className="mt-3 text-sm text-white/80">Elige un asambleísta y marca únicamente las votaciones que quieras importar. Es un flujo independiente del Camino A.</p>
+      </div>
+      <div className="p-6">
                 <div className="flex-1">
-                  <div className="inline-flex items-center rounded-full bg-accent-blue px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] text-white">
-                    Elegir votaciones específicas
-                  </div>
-                  <h5 className="mt-3 text-lg font-black text-primary-navy">Importar solo las votaciones que selecciones</h5>
                   <p className="mt-2 text-sm text-slate-600">Mantiene el flujo manual actual: consulta la API externa de asambleístas en <span className="font-semibold">/admin/assembly-members</span>, carga sus votaciones desde <span className="font-semibold">{'/admin/assembly-members/{id}/votings'}</span> y envía únicamente las seleccionadas a <span className="font-semibold">{'/admin/import-votings/{memberId}/selected'}</span>.</p>
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
                     <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Buscar asambleísta</p>
@@ -745,11 +771,9 @@ const AdminPage: React.FC = () => {
                   )}
                 </div>
               </div>
-            </section>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
   );
 };
 

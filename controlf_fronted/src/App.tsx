@@ -9,14 +9,20 @@ import DashboardPage from './componentes/DashboardPage'
 import LoginPage from './componentes/auth/LoginPage'
 import RegisterPage from './componentes/auth/RegisterPage'
 import ProtectedRoute from './componentes/auth/ProtectedRoute'
+import { useAuth } from './context/AuthContext'
 
 function App() {
+  const { isAuthenticated } = useAuth()
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/registro" element={<RegisterPage />} />
       <Route path="/" element={<MainLayout />}>
-        <Route index element={<DirectorioPoliticosPage />} />
+        <Route
+          index
+          element={isAuthenticated ? <DirectorioPoliticosPage /> : <Navigate to="/login" replace />}
+        />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="politico/:id" element={<PerfilPoliticoPage />} />
         <Route path="leyes" element={<DirectorioLeyesPage />} />
