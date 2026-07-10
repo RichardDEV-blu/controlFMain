@@ -1,5 +1,6 @@
 package com.controlf.controller;
 
+import com.controlf.dto.CrearPromesaRequestDTO;
 import com.controlf.dto.PanelControlDTO;
 import com.controlf.dto.PanelMantenimientoDTO;
 import com.controlf.dto.VinculoRequestDTO;
@@ -32,6 +33,11 @@ public class AdminController {
     @GetMapping("/politicos/{id}/promesas")
     public java.util.List<com.controlf.dto.SimpleItemDTO> getPromesas(@PathVariable Integer id) {
         return adminService.getPromesasByPolitico(id);
+    }
+
+    @PostMapping("/promesas")
+    public void crearPromesa(@RequestBody CrearPromesaRequestDTO request) {
+        adminService.crearPromesa(request);
     }
 
     @GetMapping("/panel")

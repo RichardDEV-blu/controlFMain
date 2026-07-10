@@ -4,30 +4,73 @@ import MotorCoherencia from './COMPONENTE_MOTOR_COHERENCIA/MotorCoherencia';
 import MantenimientoSistema from './COMPONENTE_MANTENIMIENTO_DEL_SISTEMA/MantenimientoSistema';
 import { useAuth } from '../../context/AuthContext';
 
+interface AssemblyMember {
+  id: number | string;
+  firstName: string;
+  lastname: string;
+  territorial?: string;
+}
+
+interface PanelOption {
+  nombreOpcion: string;
+  icono: string;
+  notificacionBadge?: number;
+}
+
+interface VotingItem {
+  id: number;
+  proposalDescription?: string;
+  description?: string;
+}
+
+interface ImportResult {
+  found: number;
+  imported: number;
+  ignored: number;
+  duplicates: number;
+}
+
+interface AdminSecurityData {
+  tituloSeccion: string;
+  opciones: PanelOption[];
+}
+
+interface AdminMaintenanceData {
+  id: string;
+  titulo: string;
+  codigoReferencia: string;
+  estadoBaseDeDatos: boolean;
+  estadoEtiqueta: string;
+  fechaUltimoRespaldo: string;
+  cargaServidorPorcentaje: number;
+  accionesDisponibles: string[];
+}
+
+const defaultMaintenanceData: AdminMaintenanceData = {
+  id: 'admin',
+  titulo: 'Mantenimiento del sistema',
+  codigoReferencia: 'N/D',
+  estadoBaseDeDatos: false,
+  estadoEtiqueta: 'OFFLINE',
+  fechaUltimoRespaldo: 'Sin información',
+  cargaServidorPorcentaje: 0,
+  accionesDisponibles: []
+};
+
 const AdminPage: React.FC = () => {
-  const { apiFetch } = useAuth();
-  const [seguridad, setSeguridad] = useState<any>(null);
-  const [mantenimiento, setMantenimiento] = useState<any>(null);
-  const [historico, setHistorico] = useState<any>(null);
+  const [seguridad, setSeguridad] = useState<AdminSecurityData | null>(null);
+  const [mantenimiento, setMantenimiento] = useState<AdminMaintenanceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [assemblyMembers, setAssemblyMembers] = useState<any[]>([]);
+  const [assemblyMembers, setAssemblyMembers] = useState<AssemblyMember[]>([]);
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [memberSearch, setMemberSearch] = useState('');
   const [showMemberDropdown, setShowMemberDropdown] = useState(false);
-  const [politicoSearch, setPoliticoSearch] = useState('');
-  const [showPoliticoDropdown, setShowPoliticoDropdown] = useState(false);
-  const [votings, setVotings] = useState<any[]>([]);
+  const [votings, setVotings] = useState<VotingItem[]>([]);
   const [selectedVotingIds, setSelectedVotingIds] = useState<number[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(true);
   const [isLoadingVotings, setIsLoadingVotings] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [importResult, setImportResult] = useState<any>(null);
-  const [importablePoliticos, setImportablePoliticos] = useState<Array<{ id: string; label: string }>>([]);
-  const [selectedPoliticoIds, setSelectedPoliticoIds] = useState<string[]>([]);
-  const [isImportingPoliticos, setIsImportingPoliticos] = useState(false);
-  const [politicoImportResult, setPoliticoImportResult] = useState<any>(null);
-  const [isSyncingPoliticos, setIsSyncingPoliticos] = useState(false);
-  const [politicoSyncResult, setPoliticoSyncResult] = useState<any>(null);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const politicoDropdownRef = useRef<HTMLDivElement>(null);
   const ITEMS_PER_PAGE = 20;
@@ -41,11 +84,17 @@ const AdminPage: React.FC = () => {
         apiFetch('/api/admin/historico')
       ]);
 
-      if (segRes.ok) setSeguridad(await segRes.json());
-      if (mantRes.ok) setMantenimiento(await mantRes.json());
-      if (historicoRes.ok) setHistorico(await historicoRes.json());
+      const [securityData, maintenanceData] = await Promise.all([
+        segRes.ok ? (segRes.json() as Promise<AdminSecurityData>) : Promise.resolve<AdminSecurityData | null>(null),
+        mantRes.ok ? (mantRes.json() as Promise<AdminMaintenanceData>) : Promise.resolve<AdminMaintenanceData | null>(null)
+      ]);
+
+      setSeguridad(securityData);
+      setMantenimiento(maintenanceData);
     } catch (error) {
-      console.error("Error al cargar datos administrativos:", error);
+      console.error('Error al cargar datos administrativos:', error);
+      setSeguridad(null);
+      setMantenimiento(null);
     } finally {
       setIsLoading(false);
     }
@@ -75,22 +124,75 @@ const AdminPage: React.FC = () => {
   }, [showPoliticoDropdown]);
 
   useEffect(() => {
-    fetchData();
-    const loadAssemblyMembers = async () => {
+    let isMounted = true;
+
+    const loadInitialData = async () => {
+      setIsLoading(true);
+
       try {
-        setIsLoadingMembers(true);
-        const response = await apiFetch('/admin/assembly-members');
-        const data = await response.json();
-        setAssemblyMembers(data || []);
+        const [segRes, mantRes] = await Promise.all([
+          fetch('/api/admin/panel'),
+          fetch('/api/admin/mantenimiento')
+        ]);
+
+        if (!isMounted) return;
+
+        const [securityData, maintenanceData] = await Promise.all([
+          segRes.ok ? (segRes.json() as Promise<AdminSecurityData>) : Promise.resolve<AdminSecurityData | null>(null),
+          mantRes.ok ? (mantRes.json() as Promise<AdminMaintenanceData>) : Promise.resolve<AdminMaintenanceData | null>(null)
+        ]);
+
+        setSeguridad(securityData);
+        setMantenimiento(maintenanceData);
       } catch (error) {
-        console.error('Error al cargar asambleístas:', error);
+        console.error('Error al cargar datos administrativos:', error);
+        if (isMounted) {
+          setSeguridad(null);
+          setMantenimiento(null);
+        }
       } finally {
-        setIsLoadingMembers(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
-    loadAssemblyMembers();
-    loadImportablePoliticos();
+    const loadAssemblyMembers = async () => {
+      try {
+        setIsLoadingMembers(true);
+        const response = await fetch('/admin/assembly-members');
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json().catch(() => null);
+
+        if (!isMounted) return;
+
+        const normalizedMembers = Array.isArray(data)
+          ? (data as AssemblyMember[])
+          : [];
+
+        setAssemblyMembers(normalizedMembers);
+      } catch (error) {
+        console.error('Error al cargar asambleístas:', error);
+        if (isMounted) {
+          setAssemblyMembers([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingMembers(false);
+        }
+      }
+    };
+
+    void loadInitialData();
+    void loadAssemblyMembers();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleAccionMantenimiento = async (accion: string) => {
@@ -151,9 +253,18 @@ const AdminPage: React.FC = () => {
 
     try {
       setIsLoadingVotings(true);
-      const response = await apiFetch(`/admin/assembly-members/${memberId}/votings`);
-      const data = await response.json();
-      setVotings(data || []);
+      const response = await fetch(`/admin/assembly-members/${memberId}/votings`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json().catch(() => null);
+      const normalizedVotings = Array.isArray(data)
+        ? (data as VotingItem[])
+        : [];
+
+      setVotings(normalizedVotings);
     } catch (error) {
       console.error('Error al cargar votaciones:', error);
       setVotings([]);
@@ -242,8 +353,8 @@ const AdminPage: React.FC = () => {
         },
         body: JSON.stringify(selectedVotingIds)
       });
-      const data = await response.json();
-      setImportResult(data);
+      const data = await response.json().catch(() => null);
+      setImportResult((data as ImportResult | null) ?? null);
     } catch (error) {
       console.error('Error al importar votaciones:', error);
     } finally {
@@ -251,26 +362,7 @@ const AdminPage: React.FC = () => {
     }
   };
 
-  const handleImportLeyesPorPoliticos = async () => {
-    if (selectedPoliticoIds.length === 0) return;
-
-    try {
-      setIsImportingPoliticos(true);
-      const response = await apiFetch('/admin/import-leyes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ politicoIds: selectedPoliticoIds.map((id) => Number(id)) })
-      });
-      const data = await response.json();
-      setPoliticoImportResult(data);
-    } catch (error) {
-      console.error('Error al importar leyes por candidatos:', error);
-    } finally {
-      setIsImportingPoliticos(false);
-    }
-  };
-
-  const getVoteBadgeClass = (description: string) => {
+  const getVoteBadgeClass = (description?: string) => {
     const normalized = (description || '').trim().toUpperCase();
     if (normalized === 'SI') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
     if (normalized === 'NO') return 'bg-rose-100 text-rose-700 border-rose-200';
@@ -314,12 +406,10 @@ const AdminPage: React.FC = () => {
         </button>
       </div>
 
-      {seguridad && (
-        <PanelControlSeguridad
-          titulo={seguridad.tituloSeccion}
-          opciones={seguridad.opciones}
-        />
-      )}
+      <PanelControlSeguridad
+        titulo={seguridad?.tituloSeccion ?? 'Panel de control'}
+        opciones={seguridad?.opciones ?? []}
+      />
 
       <MotorCoherencia />
 
@@ -387,7 +477,7 @@ const AdminPage: React.FC = () => {
       </div>
 
       <MantenimientoSistema
-        info={mantenimiento}
+        info={mantenimiento ?? defaultMaintenanceData}
         onAccion={handleAccionMantenimiento}
       />
 

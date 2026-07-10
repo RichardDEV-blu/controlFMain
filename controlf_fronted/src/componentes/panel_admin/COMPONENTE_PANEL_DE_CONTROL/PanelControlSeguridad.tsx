@@ -21,29 +21,33 @@ const PanelControlSeguridad: React.FC<PanelControlSeguridadProps> = ({ titulo, o
     }
   };
 
+  const opcionesVisibles = opciones.filter(
+    (opcion) => !['Gestionar Roles de Staff', 'Usuarios Reportados', 'Auditoría de Logs del Sistema'].includes(opcion.nombreOpcion)
+  );
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
       <div className="px-8 py-4 border-b border-slate-100 bg-slate-50/50">
         <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">{titulo}</h4>
       </div>
       <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        {opciones.map((opcion, index) => (
-          <button 
+        {opcionesVisibles.map((opcion, index) => (
+          <div
             key={index}
-            className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-xl hover:border-accent-blue/50 hover:bg-white transition-all group"
+            className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-xl"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-white rounded-lg text-slate-400 group-hover:text-accent-blue shadow-sm border border-slate-100 transition-colors">
+              <div className="p-2 bg-white rounded-lg text-slate-400 shadow-sm border border-slate-100">
                 {getIcon(opcion.icono)}
               </div>
-              <span className="text-sm font-bold text-slate-600 group-hover:text-primary-navy">{opcion.nombreOpcion}</span>
+              <span className="text-sm font-bold text-slate-600">{opcion.nombreOpcion}</span>
             </div>
             {opcion.notificacionBadge !== undefined && opcion.notificacionBadge > 0 && (
               <span className="bg-danger-red text-white text-[10px] font-black px-2 py-0.5 rounded-full">
                 {opcion.notificacionBadge}
               </span>
             )}
-          </button>
+          </div>
         ))}
       </div>
     </div>
