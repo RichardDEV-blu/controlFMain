@@ -8,6 +8,8 @@ import com.controlf.dto.CrearPoliticoRequestDTO;
 import com.controlf.dto.CrearPromesaRequestDTO;
 import com.controlf.dto.ImportResultDTO;
 import com.controlf.dto.LeyNormalizacionResultDTO;
+import com.controlf.dto.LeySyncItemDTO;
+import com.controlf.dto.LeySyncStatusDTO;
 import com.controlf.dto.PanelControlDTO;
 import com.controlf.dto.PanelMantenimientoDTO;
 import com.controlf.dto.ReporteHistoricoDTO;
@@ -42,6 +44,7 @@ public class AdminService {
     private final UsuarioRepository usuarioRepository;
     private final PoliticoRepository politicoRepository;
     private final AssemblyImportService assemblyImportService;
+    private final LeyService leyService;
     private final VotoRepository votoRepository;
 
     public MotorCoherenciaDataDTO getMotorData() {
@@ -142,6 +145,53 @@ public class AdminService {
                 .totalLeyes(leyes.size())
                 .leyesActualizadas(actualizadas)
                 .leyesSinCambios(sinCambios)
+                .build();
+    }
+
+    public java.util.List<LeySyncItemDTO> listarLeyesParaSync() {
+        return leyRepository.findAll().stream()
+                .map(ley -> LeySyncItemDTO.builder()
+                        .id(ley.getId())
+                        .titulo(ley.getTitulo())
+                        .externalId(ley.getExternalId())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Transactional
+    public LeySyncStatusDTO syncAllLeyesWithVotingDetails() {
+        var leyes = leyRepository.findAll();
+        int total = leyes.size();
+        int completed = 0;
+        int imported = 0;
+        int duplicates = 0;
+        int ignored = 0;
+        String currentLeyTitulo = "";
+
+        for (Ley ley : leyes) {
+            currentLeyTitulo = ley.getTitulo();
+            if (ley.getExternalId() == null) {
+                ignored += 1;
+                completed += 1;
+                continue;
+            }
+
+            ImportResultDTO result = leyService.importVotingDetailVotes(ley.getId());
+            imported += result.getImported();
+            duplicates += result.getDuplicates();
+            ignored += result.getIgnored();
+            completed += 1;
+        }
+
+        registrarLog("SYNC_LEYES_VOTING_DETAIL", String.format("Sincronización de leyes finalizada: total=%d, importadas=%d, duplicadas=%d, ignoradas=%d", total, imported, duplicates, ignored));
+
+        return LeySyncStatusDTO.builder()
+                .total(total)
+                .completed(completed)
+                .imported(imported)
+                .duplicated(duplicates)
+                .ignored(ignored)
+                .currentLeyTitulo(completed < total ? currentLeyTitulo : "Finalizado")
                 .build();
     }
 

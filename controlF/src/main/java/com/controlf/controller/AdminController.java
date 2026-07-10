@@ -90,4 +90,9 @@ public class AdminController {
     public com.controlf.dto.LeyNormalizacionResultDTO postNormalizarLeyes() {
         return adminService.normalizarLeyes();
     }
+
+    @GetMapping("/leyes/syncable")
+    public java.util.List<com.controlf.dto.LeySyncItemDTO> getLeyesSyncables() {
+        return adminService.listarLeyesParaSync();
+    }
 }

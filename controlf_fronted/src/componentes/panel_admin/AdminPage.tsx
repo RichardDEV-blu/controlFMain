@@ -30,6 +30,22 @@ interface ImportResult {
   duplicates: number;
 }
 
+interface LeySyncItem {
+  id: number;
+  titulo: string;
+  externalId: number | null;
+}
+
+interface LeySyncProgress {
+  total: number;
+  processed: number;
+  imported: number;
+  duplicated: number;
+  ignored: number;
+  currentLey: string;
+  status: string;
+}
+
 interface HistoricoData {
   totalLeyes: number;
   totalVotos: number;
@@ -89,6 +105,9 @@ const AdminPage: React.FC = () => {
   const [politicoSyncResult, setPoliticoSyncResult] = useState<ImportResult | null>(null);
   const [isSyncingPoliticos, setIsSyncingPoliticos] = useState(false);
   const [isImportingPoliticos, setIsImportingPoliticos] = useState(false);
+  const [leyesParaSync, setLeyesParaSync] = useState<LeySyncItem[]>([]);
+  const [isSyncingAllLeyes, setIsSyncingAllLeyes] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<LeySyncProgress | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const politicoDropdownRef = useRef<HTMLDivElement>(null);
   const { apiFetch } = useAuth();
@@ -328,6 +347,53 @@ const AdminPage: React.FC = () => {
       console.error('Error al sincronizar políticos:', error);
     } finally {
       setIsSyncingPoliticos(false);
+    }
+  };
+
+  const handleSyncAllLeyes = async () => {
+    setIsSyncingAllLeyes(true);
+    setSyncProgress({ total: 0, processed: 0, imported: 0, duplicated: 0, ignored: 0, currentLey: '', status: 'Iniciando...'});
+
+    try {
+      const listResponse = await apiFetch('/api/admin/leyes/syncable');
+      if (!listResponse.ok) {
+        throw new Error(`HTTP ${listResponse.status}`);
+      }
+
+      const laws = (await listResponse.json()) as LeySyncItem[];
+      setLeyesParaSync(laws);
+      const progress: LeySyncProgress = {
+        total: laws.length,
+        processed: 0,
+        imported: 0,
+        duplicated: 0,
+        ignored: 0,
+        currentLey: '',
+        status: 'Procesando...'
+      };
+      setSyncProgress(progress);
+
+      for (const ley of laws) {
+        progress.currentLey = ley.titulo;
+        const response = await apiFetch(`/api/leyes/${ley.id}/import-voting-detail`, { method: 'POST' });
+        if (response.ok) {
+          const data = await response.json().catch(() => null) as ImportResult | null;
+          progress.imported += data?.imported ?? 0;
+          progress.duplicated += data?.duplicates ?? 0;
+          progress.ignored += data?.ignored ?? 0;
+        } else {
+          progress.ignored += 1;
+        }
+        progress.processed += 1;
+        setSyncProgress({ ...progress });
+      }
+
+      setSyncProgress((current) => current ? { ...current, status: 'Finalizado' } : null);
+    } catch (error) {
+      console.error('Error al sincronizar todas las leyes:', error);
+      setSyncProgress((current) => current ? { ...current, status: 'Error' } : null);
+    } finally {
+      setIsSyncingAllLeyes(false);
     }
   };
 
@@ -684,6 +750,51 @@ const AdminPage: React.FC = () => {
         </div>
       </div>
     </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 shadow-sm mb-6">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-sm font-black text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79V15a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2.21"/><path d="M7 10l5-5 5 5"/></svg>
+          </div>
+          <div className="flex-1">
+            <div className="inline-flex items-center rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] text-white">
+              Sincronización global
+            </div>
+            <h5 className="mt-3 text-lg font-black text-primary-navy">Sincronizar todas las leyes</h5>
+            <p className="mt-2 text-sm text-slate-600">Recorre todas las leyes locales y vincula los votos externos de VotingDetail para cada una. El proceso se actualiza en tiempo real con el estado de avance.</p>
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+              <button
+                type="button"
+                onClick={handleSyncAllLeyes}
+                disabled={isSyncingAllLeyes}
+                className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white hover:bg-emerald-700 transition-all shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSyncingAllLeyes ? 'Sincronizando leyes...' : 'Sincronizar todas las leyes'}
+              </button>
+              {syncProgress && (
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between text-sm text-slate-600">
+                    <span>{syncProgress.status}</span>
+                    <span>{syncProgress.processed}/{syncProgress.total}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div className="h-full rounded-full bg-emerald-500" style={{ width: `${syncProgress.total > 0 ? (syncProgress.processed / syncProgress.total) * 100 : 0}%` }} />
+                  </div>
+                  <div className="text-sm text-slate-700">
+                    Procesando: <span className="font-black">{syncProgress.currentLey || 'Sin iniciar'}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Importados</p><p className="mt-2 font-black text-primary-navy">{syncProgress.imported}</p></div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Duplicados</p><p className="mt-2 font-black text-primary-navy">{syncProgress.duplicated}</p></div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Ignorados</p><p className="mt-2 font-black text-primary-navy">{syncProgress.ignored}</p></div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Total</p><p className="mt-2 font-black text-primary-navy">{syncProgress.total}</p></div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 shadow-sm">
         <div className="flex items-start gap-3">
