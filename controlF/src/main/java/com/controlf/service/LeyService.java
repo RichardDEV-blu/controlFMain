@@ -32,6 +32,7 @@ public class LeyService {
     private final CalificacionRepository calificacionRepository;
     private final ComentarioRepository comentarioRepository;
     private final UsuarioRepository usuarioRepository;
+    private final com.controlf.db.repository.PoliticoRepository politicoRepository;
 
     private static final int CALIFICACION_MAXIMA = 5;
 
@@ -88,6 +89,7 @@ public class LeyService {
                 .votacion(getResultadoVotacion(id))
                 .auditoria(getAuditoriaCoherencia(id))
                 .debate(getDebateCiudadano(id))
+                .votingMatchSummary(getVotingMatchSummary(id))
                 .build();
     }
 
@@ -231,6 +233,139 @@ public class LeyService {
                 .build();
     }
 
+    @Transactional
+    public ImportResultDTO importVotingDetailVotes(Integer leyId) {
+        Ley ley = leyRepository.findById(leyId).orElseThrow();
+        if (ley.getExternalId() == null) {
+            return new ImportResultDTO(0, 0, 0, 0);
+        }
+
+        java.util.List<VotingDetailDTO> details;
+        try {
+            details = loadVotingDetailEntries(ley.getExternalId());
+        } catch (Exception e) {
+            throw new RuntimeException("No se pudo cargar el detalle de votación externa: " + e.getMessage(), e);
+        }
+
+        int total = details.size();
+        int imported = 0;
+        int ignored = 0;
+        int duplicates = 0;
+
+        for (VotingDetailDTO detail : details) {
+            String fullName = buildFullName(detail.getFirstName(), detail.getLastname());
+            if (fullName.isEmpty()) {
+                ignored++;
+                continue;
+            }
+
+            var politicoOpt = politicoRepository.findByNombreCompletoContainingIgnoreCase(fullName);
+            if (politicoOpt.isEmpty()) {
+                ignored++;
+                continue;
+            }
+
+            var politico = politicoOpt.get();
+            if (votoRepository.existsByPoliticoIdAndLeyId(politico.getId(), ley.getId())) {
+                duplicates++;
+                continue;
+            }
+
+            Voto voto = new Voto();
+            voto.setPolitico(politico);
+            voto.setLey(ley);
+            voto.setTipoVoto(mapVote(detail.getDescription()));
+            voto.setAsistencia(true);
+            voto.setFechaVoto(LocalDateTime.now());
+            votoRepository.save(voto);
+            imported++;
+        }
+
+        return new ImportResultDTO(total, imported, ignored, duplicates);
+    }
+
+    public VotingMatchSummaryDTO getVotingMatchSummary(Integer leyId) {
+        Ley ley = leyRepository.findById(leyId).orElseThrow();
+        if (ley.getExternalId() == null) {
+            return VotingMatchSummaryDTO.builder()
+                    .found(0)
+                    .notFound(0)
+                    .total(0)
+                    .build();
+        }
+
+        try {
+            java.util.List<VotingDetailDTO> details = loadVotingDetailEntries(ley.getExternalId());
+            int total = details.size();
+            int found = 0;
+
+            for (VotingDetailDTO detail : details) {
+                String fullName = buildFullName(detail.getFirstName(), detail.getLastname());
+                if (fullName.isEmpty()) {
+                    continue;
+                }
+                if (politicoRepository.findByNombreCompletoContainingIgnoreCase(fullName).isPresent()) {
+                    found++;
+                }
+            }
+
+            return VotingMatchSummaryDTO.builder()
+                    .found(found)
+                    .notFound(Math.max(0, total - found))
+                    .total(total)
+                    .build();
+        } catch (Exception e) {
+            return VotingMatchSummaryDTO.builder()
+                    .found(0)
+                    .notFound(0)
+                    .total(0)
+                    .build();
+        }
+    }
+
+    private java.util.List<VotingDetailDTO> loadVotingDetailEntries(Long externalId) throws Exception {
+        if (externalId == null) {
+            return java.util.List.of();
+        }
+
+        java.net.URI uri = java.net.URI.create("https://datos.asambleanacional.gob.ec/ecurul/assemblyman/votingDetail?idVoting=" + externalId);
+        java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                .followRedirects(java.net.http.HttpClient.Redirect.ALWAYS)
+                .build();
+        java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                .uri(uri)
+                .header("Accept", "application/json")
+                .header("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36")
+                .GET()
+                .build();
+
+        java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200 || response.body() == null || response.body().isBlank()) {
+            return java.util.List.of();
+        }
+
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        return mapper.readValue(response.body(), mapper.getTypeFactory().constructCollectionType(java.util.List.class, VotingDetailDTO.class));
+    }
+
+    private String buildFullName(String firstName, String lastname) {
+        String trimmedFirst = firstName == null ? "" : firstName.trim();
+        String trimmedLast = lastname == null ? "" : lastname.trim();
+        return (trimmedFirst + " " + trimmedLast).trim();
+    }
+
+    private TipoVoto mapVote(String description) {
+        if (description == null) {
+            return TipoVoto.ABSTENCION;
+        }
+        return switch (description.trim().toUpperCase()) {
+            case "SI" -> TipoVoto.FAVOR;
+            case "NO" -> TipoVoto.CONTRA;
+            case "ABSTENCION", "ABSTENCIÓN" -> TipoVoto.ABSTENCION;
+            default -> TipoVoto.ABSTENCION;
+        };
+    }
+
     private FiltrosLeyDTO buildFiltrosLeyDTO() {
         return FiltrosLeyDTO.builder()
                 .categorias(leyRepository.findDistinctCategorias())
@@ -267,5 +402,28 @@ public class LeyService {
                 .proponente(ley.getProponente())
                 .accionUrl("/leyes/" + ley.getId())
                 .build();
+    }
+
+    private int loadVotingDetailCount(Long externalId) throws Exception {
+        if (externalId == null) {
+            return 0;
+        }
+        java.net.URI uri = java.net.URI.create("https://datos.asambleanacional.gob.ec/ecurul/assemblyman/votingDetail?idVoting=" + externalId);
+        java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                .followRedirects(java.net.http.HttpClient.Redirect.ALWAYS)
+                .build();
+        java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                .uri(uri)
+                .header("Accept", "application/json")
+                .header("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36")
+                .GET()
+                .build();
+        java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200 || response.body() == null || response.body().isBlank()) {
+            return 0;
+        }
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        java.util.List<?> list = mapper.readValue(response.body(), mapper.getTypeFactory().constructCollectionType(java.util.List.class, java.util.Map.class));
+        return list == null ? 0 : list.size();
     }
 }

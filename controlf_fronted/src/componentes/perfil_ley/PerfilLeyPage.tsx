@@ -17,6 +17,8 @@ const PerfilLeyPage: React.FC = () => {
   const [asistencia, setAsistencia] = useState('true');
   const [isSavingLey, setIsSavingLey] = useState(false);
   const [mensajeLey, setMensajeLey] = useState<string | null>(null);
+  const [isLinkingVotes, setIsLinkingVotes] = useState(false);
+  const [linkResult, setLinkResult] = useState<any>(null);
   const { apiFetch, isAuthenticated, role } = useAuth();
 
   const fetchPerfil = async () => {
@@ -131,6 +133,27 @@ const PerfilLeyPage: React.FC = () => {
     }
   };
 
+  const handleLinkExternalVotes = async () => {
+    if (!id) return;
+    setIsLinkingVotes(true);
+    setLinkResult(null);
+
+    try {
+      const response = await apiFetch(`/api/leyes/${id}/import-voting-detail`, { method: 'POST' });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      setLinkResult(data);
+      fetchPerfil();
+    } catch (error) {
+      console.error('Error al enlazar votos externos:', error);
+      setLinkResult({ error: true });
+    } finally {
+      setIsLinkingVotes(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto animate-pulse space-y-8">
@@ -163,6 +186,48 @@ const PerfilLeyPage: React.FC = () => {
           <span className="bg-slate-100 px-3 py-1 rounded">Categoría: {categoria || 'Sin asignar'}</span>
           <span className="bg-success-green/10 text-success-green px-3 py-1 rounded border border-success-green/20">{estado || 'SIN ESTADO'}</span>
         </div>
+        {perfil.votingMatchSummary && (
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Políticos encontrados</p>
+              <p className="mt-2 text-2xl font-black text-primary-navy">{perfil.votingMatchSummary.found}</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Políticos no encontrados</p>
+              <p className="mt-2 text-2xl font-black text-primary-navy">{perfil.votingMatchSummary.notFound}</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Total votantes externos</p>
+              <p className="mt-2 text-2xl font-black text-primary-navy">{perfil.votingMatchSummary.total}</p>
+            </div>
+          </div>
+        )}
+        {role === 'ADMIN' && (
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              onClick={handleLinkExternalVotes}
+              disabled={isLinkingVotes}
+              className="rounded-xl bg-accent-blue px-4 py-3 text-sm font-bold text-white hover:bg-blue-600 disabled:opacity-60"
+            >
+              {isLinkingVotes ? 'Enlazando votos...' : 'Enlazar votos externos'}
+            </button>
+            {linkResult && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                {linkResult.error ? (
+                  <p className="font-bold text-rose-600">Error al enlazar votos externos.</p>
+                ) : (
+                  <div className="grid gap-2 sm:grid-cols-4">
+                    <div><span className="font-black text-primary-navy">{linkResult.found}</span> totales</div>
+                    <div><span className="font-black text-primary-navy">{linkResult.imported}</span> importados</div>
+                    <div><span className="font-black text-primary-navy">{linkResult.ignored}</span> no Coinc.</div>
+                    <div><span className="font-black text-primary-navy">{linkResult.duplicates}</span> repetidos</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">

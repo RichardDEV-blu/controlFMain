@@ -69,6 +69,11 @@ public class LeyController {
         leyService.addCalificacion(id, request, currentUserId);
     }
 
+    @PostMapping("/{id}/import-voting-detail")
+    public ImportResultDTO importVotingDetail(@PathVariable Integer id) {
+        return leyService.importVotingDetailVotes(id);
+    }
+
     @PatchMapping("/comentarios/{comentarioId}")
     public ResponseEntity<Void> actualizarComentario(@PathVariable Integer comentarioId, @Valid @RequestBody ComentarioRequestDTO request, Authentication authentication) {
         Comentario comentario = comentarioRepository.findById(comentarioId).orElseThrow();
