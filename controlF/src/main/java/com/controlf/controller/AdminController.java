@@ -1,10 +1,12 @@
 package com.controlf.controller;
 
+import com.controlf.dto.CrearPoliticoRequestDTO;
 import com.controlf.dto.CrearPromesaRequestDTO;
 import com.controlf.dto.PanelControlDTO;
 import com.controlf.dto.PanelMantenimientoDTO;
 import com.controlf.dto.VinculoRequestDTO;
 import com.controlf.service.AdminService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -39,6 +41,16 @@ public class AdminController {
         adminService.crearPromesa(request);
     }
 
+    @PostMapping("/politicos")
+    public void crearPolitico(@RequestBody CrearPoliticoRequestDTO request) {
+        adminService.crearPolitico(request);
+    }
+
+    @DeleteMapping("/politicos/{id}")
+    public void eliminarPolitico(@PathVariable Integer id) {
+        adminService.eliminarPolitico(id);
+    }
+
     @GetMapping("/panel")
     public PanelControlDTO getPanel() {
         return adminService.getSecurityPanel();
@@ -50,7 +62,7 @@ public class AdminController {
     }
 
     @PostMapping("/vinculos")
-    public void postVinculo(@RequestBody VinculoRequestDTO request) {
+    public void postVinculo(@Valid @RequestBody VinculoRequestDTO request) {
         adminService.crearVinculoCoherencia(request);
     }
 
@@ -64,8 +76,23 @@ public class AdminController {
         adminService.limpiarCache();
     }
 
+    @GetMapping("/historico")
+    public com.controlf.dto.ReporteHistoricoDTO getHistorico() {
+        return adminService.getHistoricoResumen();
+    }
+
     @PostMapping("/importar-leyes")
     public void postImportarLeyes() {
         adminService.importarLeyes();
+    }
+
+    @PostMapping("/normalizar-leyes")
+    public com.controlf.dto.LeyNormalizacionResultDTO postNormalizarLeyes() {
+        return adminService.normalizarLeyes();
+    }
+
+    @GetMapping("/leyes/syncable")
+    public java.util.List<com.controlf.dto.LeySyncItemDTO> getLeyesSyncables() {
+        return adminService.listarLeyesParaSync();
     }
 }

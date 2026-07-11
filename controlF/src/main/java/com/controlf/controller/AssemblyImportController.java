@@ -1,9 +1,11 @@
 package com.controlf.controller;
 
 import com.controlf.dto.AssemblyMemberDTO;
+import com.controlf.dto.ImportLeyesRequestDTO;
 import com.controlf.dto.ImportResultDTO;
 import com.controlf.dto.VotingDTO;
 import com.controlf.service.AssemblyImportService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,8 +14,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin")
+@RequestMapping({"/admin", "/api/admin"})
 @RequiredArgsConstructor
+@CrossOrigin("*")
 public class AssemblyImportController {
 
     private final AssemblyImportService assemblyImportService;
@@ -41,6 +44,11 @@ public ResponseEntity<List<VotingDTO>> getVotings(@PathVariable Long id) {
             @PathVariable Long memberId,
             @RequestBody List<Long> selectedIds) {
         return ResponseEntity.ok(assemblyImportService.importSelectedVotings(memberId, selectedIds));
+    }
+
+    @PostMapping("/import-leyes")
+    public ResponseEntity<ImportResultDTO> importLeyesForPoliticos(@Valid @RequestBody ImportLeyesRequestDTO request) {
+        return ResponseEntity.ok(assemblyImportService.importLeyesForPoliticos(request.getPoliticoIds()));
     }
 
     @PostMapping("/import-votings/{id}")

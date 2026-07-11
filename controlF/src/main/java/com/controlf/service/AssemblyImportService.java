@@ -27,8 +27,11 @@ import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.DateTimeFormatterBuilder;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -49,11 +52,23 @@ public class AssemblyImportService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public List<AssemblyMemberDTO> getAssemblyMembers() {
-        String url = BASE_URL + "/assembly?idType=1&onlyActive=false&idPeriod=8&idTerritorial=";
+        String url = "https://datos.asambleanacional.gob.ec/ecurul/assemblyman/assembly?idType=1&onlyActive=false&idPeriod=&idTerritorial=";
         ResponseEntity<List<AssemblyMemberDTO>> response = restTemplate.exchange(
                 url, HttpMethod.GET, null, new ParameterizedTypeReference<>() {}
         );
-        return response.getBody();
+        List<AssemblyMemberDTO> members = response.getBody();
+        if (members == null) {
+            return List.of();
+        }
+
+        // La fuente externa devuelve al mismo asambleísta una vez por cada período
+        // legislativo, todas las entradas comparten el mismo id. Nos quedamos con una
+        // sola por id para evitar nombres repetidos en los selectores del panel.
+        Map<Long, AssemblyMemberDTO> uniquePorId = new LinkedHashMap<>();
+        for (AssemblyMemberDTO member : members) {
+            uniquePorId.putIfAbsent(member.getId(), member);
+        }
+        return new ArrayList<>(uniquePorId.values());
     }
 
     public List<VotingDTO> getVotings(Long memberId) throws Exception {
@@ -121,13 +136,32 @@ return objectMapper.readValue(response.body(),
                 if (selectedIds != null && !selectedIds.contains(v.getId())) {
                     continue;
                 }
+                LocalDateTime ldt = LocalDateTime.parse(v.getVotingDate(), fmt);
                 if (leyRepository.existsByExternalId(v.getId())) {
+                    Ley existingLaw = leyRepository.findByExternalId(v.getId()).orElse(null);
+                    if (existingLaw != null) {
+                        if (votoRepository.existsByPoliticoIdAndLeyId(politico.getId(), existingLaw.getId())) {
+                            duplicates++;
+                            log.debug("Voto duplicado omitido politico={} external_id={}", politico.getNombreCompleto(), v.getId());
+                            continue;
+                        }
+
+                        Voto voto = new Voto();
+                        voto.setPolitico(politico);
+                        voto.setLey(existingLaw);
+                        voto.setTipoVoto(mapVote(v.getDescription()));
+                        voto.setAsistencia(true);
+                        voto.setFechaVoto(ldt);
+                        votoRepository.save(voto);
+
+                        imported++;
+                        log.debug("Voto agregado a ley existente external_id={} politico={}", v.getId(), politico.getNombreCompleto());
+                        continue;
+                    }
                     duplicates++;
                     log.debug("Duplicado omitido external_id={}", v.getId());
                     continue;
                 }
-
-                LocalDateTime ldt = LocalDateTime.parse(v.getVotingDate(), fmt);
 
                 Ley ley = new Ley();
                 ley.setTitulo(truncate(v.getProposalDescription(), 255));
@@ -135,6 +169,7 @@ return objectMapper.readValue(response.body(),
                 ley.setTipoExpediente("VOTACION_ASAMBLEA");
                 ley.setProponente(nombre);
                 ley.setDescripcionOriginal(v.getThemeDescription());
+                ley.setCategoria(classifyLaw(ley.getTitulo(), ley.getDescripcionOriginal()));
                 ley.setEstado(EstadoLey.DEBATE);
                 ley.setFechaIngreso(ldt.toLocalDate());
                 ley.setExternalId(v.getId());
@@ -155,6 +190,45 @@ return objectMapper.readValue(response.body(),
         log.info("Importación seleccionada finalizada: encontradas={} importadas={} ignoradas={} duplicadas={}",
                 found, imported, ignored, duplicates);
         return new ImportResultDTO(found, imported, ignored, duplicates);
+    }
+
+    public ImportResultDTO importLeyesForPoliticos(List<Integer> politicoIds) {
+        log.info("Iniciando importación por candidatos: {}", politicoIds);
+        if (politicoIds == null || politicoIds.isEmpty()) {
+            throw new RuntimeException("Debe seleccionar al menos un político");
+        }
+
+        int imported = 0;
+        int duplicates = 0;
+        int ignored = 0;
+
+        Map<Integer, Politico> politicos = politicoRepository.findAllById(politicoIds).stream()
+                .collect(Collectors.toMap(Politico::getId, politico -> politico));
+
+        for (Integer politicoId : politicoIds) {
+            Politico politico = politicos.get(politicoId);
+            if (politico == null) {
+                continue;
+            }
+
+            List<AssemblyMemberDTO> members = getAssemblyMembers();
+            AssemblyMemberDTO member = members.stream()
+                    .filter(m -> politico.getNombreCompleto() != null && (m.getFirstName() + " " + m.getLastname()).trim().equalsIgnoreCase(politico.getNombreCompleto().trim()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (member == null) {
+                ignored++;
+                continue;
+            }
+
+            ImportResultDTO result = importVotings(member.getId());
+            imported += result.getImported();
+            duplicates += result.getDuplicates();
+            ignored += result.getIgnored();
+        }
+
+        return new ImportResultDTO(politicoIds.size(), imported, ignored, duplicates);
     }
 
     public ImportResultDTO importVotings(Long assemblyMemberId) {
@@ -192,13 +266,32 @@ return objectMapper.readValue(response.body(),
                     log.debug("Votación ignorada (irrelevante): {}", v.getProposalDescription());
                     continue;
                 }
+                LocalDateTime ldt = LocalDateTime.parse(v.getVotingDate(), fmt);
                 if (leyRepository.existsByExternalId(v.getId())) {
+                    Ley existingLaw = leyRepository.findByExternalId(v.getId()).orElse(null);
+                    if (existingLaw != null) {
+                        if (votoRepository.existsByPoliticoIdAndLeyId(politico.getId(), existingLaw.getId())) {
+                            duplicates++;
+                            log.debug("Voto duplicado omitido politico={} external_id={}", politico.getNombreCompleto(), v.getId());
+                            continue;
+                        }
+
+                        Voto voto = new Voto();
+                        voto.setPolitico(politico);
+                        voto.setLey(existingLaw);
+                        voto.setTipoVoto(mapVote(v.getDescription()));
+                        voto.setAsistencia(true);
+                        voto.setFechaVoto(ldt);
+                        votoRepository.save(voto);
+
+                        imported++;
+                        log.debug("Voto agregado a ley existente external_id={} politico={}", v.getId(), politico.getNombreCompleto());
+                        continue;
+                    }
                     duplicates++;
                     log.debug("Duplicado omitido external_id={}", v.getId());
                     continue;
                 }
-
-                LocalDateTime ldt = LocalDateTime.parse(v.getVotingDate(), fmt);
 
                 Ley ley = new Ley();
                 ley.setTitulo(truncate(v.getProposalDescription(), 255));
@@ -206,6 +299,7 @@ return objectMapper.readValue(response.body(),
                 ley.setTipoExpediente("VOTACION_ASAMBLEA");
                 ley.setProponente(nombre);
                 ley.setDescripcionOriginal(v.getThemeDescription());
+                ley.setCategoria(classifyLaw(ley.getTitulo(), ley.getDescripcionOriginal()));
                 ley.setEstado(EstadoLey.DEBATE);
                 ley.setFechaIngreso(ldt.toLocalDate());
                 ley.setExternalId(v.getId());
@@ -226,6 +320,23 @@ return objectMapper.readValue(response.body(),
         log.info("Importación finalizada: encontradas={} importadas={} ignoradas={} duplicadas={}",
                 found, imported, ignored, duplicates);
         return new ImportResultDTO(found, imported, ignored, duplicates);
+    }
+
+    private String classifyLaw(String titulo, String descripcion) {
+        String combined = ((titulo == null ? "" : titulo) + " " + (descripcion == null ? "" : descripcion)).toLowerCase();
+        if (combined.contains("educ") || combined.contains("escuela") || combined.contains("universidad")) {
+            return "EDUCACION";
+        }
+        if (combined.contains("salud") || combined.contains("hospital") || combined.contains("medic")) {
+            return "SALUD";
+        }
+        if (combined.contains("trabajo") || combined.contains("empleo") || combined.contains("labor")) {
+            return "TRABAJO";
+        }
+        if (combined.contains("seguridad") || combined.contains("polic") || combined.contains("delito")) {
+            return "SEGURIDAD";
+        }
+        return "GENERAL";
     }
 
     private TipoVoto mapVote(String description) {

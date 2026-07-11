@@ -15,4 +15,5 @@ public class PerfilLeyDTO {
     private ResultadoVotacionDTO votacion;
     private AuditoriaCoherenciaDTO auditoria;
     private DebateCiudadanoDTO debate;
+    private VotingMatchSummaryDTO votingMatchSummary;
 }
