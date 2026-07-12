@@ -17,10 +17,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -114,6 +117,120 @@ public class LeyService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Agenda / calendario legislativo (CF-013). Construye eventos cronológicos a partir de datos
+     * reales: el ingreso de cada expediente y la última votación registrada por ley.
+     */
+    public AgendaLegislativaDTO getAgendaLegislativa() {
+        List<EventoAgendaDTO> eventos = new ArrayList<>();
+        long ingresos = 0;
+        long votaciones = 0;
+
+        for (Ley ley : leyRepository.findAll()) {
+            String estado = ley.getEstado() != null ? ley.getEstado().name() : null;
+
+            if (ley.getFechaIngreso() != null) {
+                eventos.add(EventoAgendaDTO.builder()
+                        .tipo("INGRESO_LEY")
+                        .fecha(ley.getFechaIngreso().toString())
+                        .titulo(ley.getTitulo())
+                        .detalle("Ingreso del expediente legislativo")
+                        .categoria(ley.getCategoria())
+                        .estado(estado)
+                        .leyId(ley.getId().toString())
+                        .build());
+                ingresos++;
+            }
+
+            List<Voto> votos = votoRepository.findByLeyId(ley.getId());
+            LocalDateTime ultimaVotacion = votos.stream()
+                    .map(Voto::getFechaVoto)
+                    .filter(Objects::nonNull)
+                    .max(LocalDateTime::compareTo)
+                    .orElse(null);
+
+            if (ultimaVotacion != null) {
+                eventos.add(EventoAgendaDTO.builder()
+                        .tipo("VOTACION")
+                        .fecha(ultimaVotacion.toLocalDate().toString())
+                        .titulo(ley.getTitulo())
+                        .detalle("Votación registrada en el pleno")
+                        .categoria(ley.getCategoria())
+                        .estado(estado)
+                        .leyId(ley.getId().toString())
+                        .conteoVotos((long) votos.size())
+                        .build());
+                votaciones++;
+            }
+        }
+
+        // Orden cronológico descendente (las fechas ISO yyyy-MM-dd ordenan lexicográficamente).
+        eventos.sort((a, b) -> b.getFecha().compareTo(a.getFecha()));
+
+        return AgendaLegislativaDTO.builder()
+                .eventos(eventos)
+                .totalEventos(eventos.size())
+                .totalIngresos(ingresos)
+                .totalVotaciones(votaciones)
+                .build();
+    }
+
+    /**
+     * Seguimiento a debates y transcripciones (CF-014). Devuelve las leyes con su texto oficial
+     * (transcripción / exposición de motivos) y su resumen simplificado, junto al resultado de la
+     * votación. Se puede filtrar por estado ("EN_DEBATE" agrupa DEBATE y EN_DEBATE).
+     */
+    public List<DebateLegislativoDTO> getDebatesLegislativos(String estadoFiltro) {
+        return leyRepository.findAll().stream()
+                .filter(ley -> coincideEstadoDebate(ley, estadoFiltro))
+                .sorted((a, b) -> {
+                    LocalDate fa = a.getFechaIngreso();
+                    LocalDate fb = b.getFechaIngreso();
+                    if (fa == null && fb == null) return 0;
+                    if (fa == null) return 1;
+                    if (fb == null) return -1;
+                    return fb.compareTo(fa);
+                })
+                .map(this::mapToDebateDTO)
+                .collect(Collectors.toList());
+    }
+
+    private boolean coincideEstadoDebate(Ley ley, String estadoFiltro) {
+        if (estadoFiltro == null || estadoFiltro.isBlank() || estadoFiltro.equalsIgnoreCase("TODOS")) {
+            return true;
+        }
+        if (estadoFiltro.equalsIgnoreCase("EN_DEBATE")) {
+            return ley.getEstado() == EstadoLey.DEBATE || ley.getEstado() == EstadoLey.EN_DEBATE;
+        }
+        try {
+            return ley.getEstado() == EstadoLey.valueOf(estadoFiltro.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return true;
+        }
+    }
+
+    private DebateLegislativoDTO mapToDebateDTO(Ley ley) {
+        long favor = votoRepository.countByLeyIdAndTipoVoto(ley.getId(), TipoVoto.FAVOR);
+        long contra = votoRepository.countByLeyIdAndTipoVoto(ley.getId(), TipoVoto.CONTRA);
+        long abstencion = votoRepository.countByLeyIdAndTipoVoto(ley.getId(), TipoVoto.ABSTENCION);
+
+        return DebateLegislativoDTO.builder()
+                .leyId(ley.getId().toString())
+                .titulo(ley.getTitulo())
+                .codigo(ley.getCodigo())
+                .estado(ley.getEstado() != null ? ley.getEstado().name() : "SIN ESTADO")
+                .categoria(ley.getCategoria())
+                .proponente(ley.getProponente())
+                .fechaIngreso(ley.getFechaIngreso() != null ? ley.getFechaIngreso().toString() : null)
+                .resumenOficial(ley.getDescripcionOriginal())
+                .resumenSimplificado(ley.getDescripcionSimplificada())
+                .votosFavor(favor)
+                .votosContra(contra)
+                .votosAbstencion(abstencion)
+                .totalVotos(favor + contra + abstencion)
+                .build();
+    }
+
     @Transactional
     public void actualizarCategoriaLey(Integer leyId, CategoriaLeyRequestDTO request) {
         Ley ley = leyRepository.findById(leyId).orElseThrow();
@@ -203,7 +320,7 @@ public class LeyService {
                 .titulo("Debate Ciudadano: " + ley.getTitulo())
                 .puntuacionPromedio(avg != null ? avg : 0.0)
                 .puntuacionMaxima(CALIFICACION_MAXIMA)
-                .comentarios(ley.getComentarios().stream().map(c -> ComentarioDebateDTO.builder()
+                .comentarios(ley.getComentarios().stream().filter(PoliticoService::esComentarioPublico).map(c -> ComentarioDebateDTO.builder()
                         .id(c.getId().toString())
                         .usuario(c.getUsuario().getNombre())
                         .mensaje(c.getTexto())

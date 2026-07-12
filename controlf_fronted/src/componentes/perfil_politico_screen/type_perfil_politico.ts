@@ -24,6 +24,9 @@ export type PerfilPolitico = {
   estaActivo: boolean;
   porcentajeCoherencia: number;
   estadoEtiqueta: string;
+  indiceReputacion: number;
+  totalCalificaciones: number;
+  etiquetaReputacion: string;
   historial: IHistorialCoherencia[];
   comentarios: ComentarioDebate[];
 };

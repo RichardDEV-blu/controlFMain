@@ -6,11 +6,17 @@ const Header = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
 
+  const role = user?.rol;
   const navItems = [
     { name: 'Dashboard', path: '/dashboard' },
     { name: 'Políticos', path: '/' },
     { name: 'Leyes', path: '/leyes' },
-    { name: 'Admin', path: '/admin' },
+    { name: 'Agenda', path: '/agenda' },
+    { name: 'Métricas', path: '/metricas' },
+    { name: 'Comparar', path: '/comparar' },
+    ...(isAuthenticated ? [{ name: 'Alertas', path: '/alertas' }] : []),
+    ...(role === 'VALIDADOR' || role === 'ADMIN' ? [{ name: 'Validación', path: '/validacion' }] : []),
+    ...(role === 'ADMIN' ? [{ name: 'Admin', path: '/admin' }] : []),
   ];
 
   return (
@@ -25,14 +31,14 @@ const Header = () => {
           </h1>
         </div>
 
-        <nav className="flex items-center gap-1 sm:gap-4">
+        <nav className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto mx-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`px-2.5 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
                   isActive
                     ? 'bg-accent-blue text-white'
                     : 'text-slate-300 hover:text-white hover:bg-slate-700'

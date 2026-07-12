@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import InfoBasica from './InfoBasica';
 import MetricaCoherencia from './MetricaCoherencia';
+import IndiceReputacion from './IndiceReputacion';
 import HistorialCoherencia from './HistorialCoherencia';
 import ParticipacionCiudadana from './ParticipacionCiudadana';
 import { type PerfilPolitico } from './type_perfil_politico';
@@ -298,12 +299,18 @@ const PerfilPoliticoPage: React.FC = () => {
         )}
       </div>
 
-      <MetricaCoherencia 
+      <MetricaCoherencia
         porcentaje={perfil.porcentajeCoherencia}
         estadoEtiqueta={perfil.estadoEtiqueta}
       />
 
-      <HistorialCoherencia 
+      <IndiceReputacion
+        indice={perfil.indiceReputacion ?? 0}
+        totalCalificaciones={perfil.totalCalificaciones ?? 0}
+        etiqueta={perfil.etiquetaReputacion ?? 'SIN CALIFICACIONES'}
+      />
+
+      <HistorialCoherencia
         historial={perfil.historial}
       />
 

@@ -24,6 +24,15 @@ public class DashboardController {
         return dashboardService.getStats();
     }
 
+    @GetMapping("/metricas")
+    public com.controlf.dto.MetricasInteractivasDTO getMetricas(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String categoria,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String estado,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String desde,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String hasta) {
+        return dashboardService.getMetricasInteractivas(categoria, estado, desde, hasta);
+    }
+
     @GetMapping("/export")
     public ResponseEntity<String> exportStats() {
         String csv = dashboardService.exportStatsCsv();
