@@ -17,14 +17,8 @@ services:
     environment:
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/controlf
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
       JWT_SECRET: ${JWT_SECRET}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-  frontend:
-    build:
-      context: ./controlf_fronted
-    environment:
-      VITE_API_URL: ${VITE_API_URL}
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
